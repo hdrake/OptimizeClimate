@@ -6,6 +6,7 @@
 \usepackage{siunitx}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage[dvipsnames]{xcolor}
 \usepackage[numbers,sort&compress]{natbib}
 \usepackage{bm}
 \usepackage{url}
@@ -39,7 +40,7 @@
 
 \subsection{CO$_{2}$ concentrations: baseline emissions, emissions reductions, and negative emissions}
 
-We assume a baseline emissions scenario which has emissions constant until 2060 and emissions decreasing linearly to zero in 2100:
+We assume a baseline emissions scenario which has emissions constant until 2060 and emissions decreasing linearly to zero in 2100 (Figure \ref{fig-configuration}a):
 \begin{equation}
   q(t)=\begin{cases}
         5
@@ -51,22 +52,137 @@ We assume a baseline emissions scenario which has emissions constant until 2060 
        \end{cases} \quad\quad \text{ ppm/year}.
 \end{equation}
 
-CO$_{2}$ concentrations start at $\SI{415}{ppm}$ and increase according the emissions scenario $q(t)$.
-
-\subsection{Temperature response}
-
-
-\subsection{Climate damages}
-
-\subsection{Control costs}
-
-\subsection{Total costs and discounting}
+CO$_{2}$ concentrations start at $c_{0}(t_{0}) = \SI{415}{ppm}$ in $t_{0}=2020$ and increase according to the emissions scenario $q(t)$, emissions reductions, and negative emissions. The baseline concentrations are simply $c_{0}(t) = c_{0}(t_{0}) + \int_{t'=t_{0}}^{t} q(t') \text{ d}t'$ (Figure \ref{fig-initial-guess}a). \textcolor{BlueViolet}{[Note: we currently assume all emitted CO$_{2}$ remains indefinitely in the atmosphere, ignoring the roughly 50\% of emissions that are in actually taken up by the ocean and biosphere.]} Emissions reductions are parameterized by the fractional reduction of yearly emissions $\phi(t) \in [0,1]$ such that the annual emissions become $q(1-\phi(t))$. Negative emissions are parameterized by the fraction $\varphi(t) \in [0,1]$ of the baseline emissions $q(t_{0}) = \SI{5}{ppm/year}$ in 2020 that are sequestered from the atmosphere in a given year (either by direct air capture, afforestation, or otherwise). The CO$_{2}$ concentrations in a given year are thus given by:
+\begin{equation}
+    c_{\phi, \varphi}(t) = c_{0}(t_{0}) + \int_{t'=t_{0}}^{t} q(t')(1-\varphi(t')) - q(t_{0}) \phi(t') \text{ d}t'.\label{eq-CO2-conc}
+\end{equation}
 
 \begin{figure}[htb!]
 \noindent\includegraphics[width=1.0\textwidth]{figures/model_configuration.png}
 \centering
 \caption{(a) Idealized no-policy baseline emissions scenario. (b) Three different idealized functions for the cost scaling of climate control technologies. (c) The fraction of cost discounted by year under a 2\% utility discount rate.}
 \label{fig-configuration}
+\end{figure}
+
+\subsection{Temperature response}
+The linearized energy balance model underlying the model for the temperature response is:
+\begin{equation}
+    c_{f} \dv{T}{t} = -BT + F(t),
+\end{equation}
+where $c_{f}$ is the thermal heat capacity of the climate system, $B$ is the sensitivity parameter, $T$ is the temperature anomaly relative to a preindustrial mean (1850 to 1900), and $F(t)$ is an anthropogenic CO$_{2}$ forcing. We assume the thermal heat capacity of the climate system is sufficiently small such that $T(t)=F(t)/B$ at all times. \textcolor{BlueViolet}{[This is not a good assumption but is straight-forward and yields a fine first approximation; an improved model would include both the thermal heat capacity of the upper ocean and a second box for transfer to the high-capacity deep ocean.]} We determine the sensitivity parameter $B$ by tuning it to the best-guess estimate of the equilibrium climate sensitivity $T_{\text{ECS}} = F_{2\times}/B = \SI{3}{\celsius}$. Since $B = F_{2\times}/T_{\text{ECS}} = F(t)/T(t)$, we have $T(t) = T_{\text{ECS}} \frac{F(t)}{F_{2\times}}$. The greenhouse gas forcing due to CO$_{2}$ is well known to be a logarithmic function of concentration, $F(t)-F(t_{0}) = b \log(\frac{c(t)}{c(t_{0})})$.
+
+The baseline temperature response to the baseline CO$_{2}$ concentrations is 
+\begin{equation}
+    T_{0}(t) = \frac{T_{\text{ECS}}}{\log(2)} \log(\frac{c_{0}(t)}{c_{0}(t_{0})}) = \epsilon \log(\frac{c_{0}(t)}{c_{0}(t_{0})}),
+\end{equation}
+where $\epsilon \equiv T_{\text{ECS}} / \log(2)$ is the transient warming parameter, while for the CO$_{2}$ concentration scenario $c_{\phi,\varphi}(t)$ it is given by
+\begin{equation}
+    T_{\phi,\varphi}(t) = \frac{T_{\text{ECS}}}{\log(2)} \log(\frac{c_{\phi,\varphi}(t)}{c_{0}(t_{0})}) = \epsilon \log(\frac{c_{\phi,\varphi}(t)}{c_{0}(t_{0})}).
+\end{equation}
+
+
+The temperature response can be further modified by solar radiation management or solar geongineering, which is parameterized by reducing the emissions-controlled temperature response $T_{\phi,\varphi}$ by a fraction $\lambda(t) \in [0,1]$, such that the controlled temperature response is given by:
+\begin{equation}
+    T_{\phi, \varphi, \lambda} = \epsilon \log(\frac{c_{\phi,\varphi}(t)}{c_{0}(t_{0})})(1 - \lambda(t)).
+\end{equation}
+
+\subsection{Climate damages}
+
+Yearly climate damages are assumed to be of the quadratic form $D(t) = \beta T(t)^{2}$, such that successive temperature increases are increasingly damaging. The baseline climate damages are thus
+\begin{equation}
+    D_{0}(t) = \beta T_{0}(t)^{2}.
+\end{equation}
+Adaptation to climate change impacts (e.g. building sea walls, installing air conditioning units, planting climate-resilient crops) is parameterized by reducing yearly damages by a fraction $\chi(t) \in [0,1]$, such that the total controlled damages are:
+\begin{equation}
+    D_{\phi, \varphi, \lambda, \chi} = \beta \; (T_{\phi, \varphi, \lambda}(t))^{2} \; (1-\chi(t)).
+\end{equation}
+
+\subsection{Control costs}
+
+The yearly cost of climate control technologies are given by
+\begin{equation}
+    C(t) = \sum_{\alpha \in \mathcal{A}} C_{\alpha} f(\alpha(t)),
+\end{equation}
+where $\mathcal{A} = \{ \phi, \varphi, \lambda, \chi \}$ is the set of climate control technologies considered here, $C_{\alpha}$ is reference cost of each climate control technology, and $f(\alpha)$ is a function that determines how the deployment cost increases as a function of fractional deployment. Here, we will focus on the medium deployment cost scenario $f_{\text{med}}(\alpha) = \alpha^{2}$, which has the following convenient properties: 
+\begin{itemize}
+    \item $\left. \dv{f}{\alpha}\right|_{\alpha=0} = 0$ (initial deployment is effectively free),
+    \item $f(1) = 1$ (full deployment costs $C_{\alpha}$), and
+    \item $\dv[2]{f}{\alpha} > 0$ (deployment gets progressively more and more expensive).
+\end{itemize}
+We also leave open the possibility of low cost $f_{\text{low}} = \left( \frac{\alpha}{1+\alpha} \right)^{2}$ and high cost $f_{\text{high}} = \left( \frac{\alpha}{1-\alpha} \right)^{2}$ deployment scenarios (Figure \ref{fig-configuration}b) but do not explore them further here. 
+
+\subsection{Total costs and discounting}
+
+The total yearly costs of climate change are the sum of the (uncontrolled or controlled) climate damages and the costs of control technologies. A common economic assumption is that society discounts future costs relative to present costs by a multiplicative factor $(1 + \rho)^{-(t-t_{0})}$ (Figure \ref{fig-configuration}c), determined by the utility discount rate $\rho$. The discounted total cost (in dollars) of climate change from $t_{0} = 2020$ to $t_{f} = 2100$ is thus given by:
+\begin{equation}
+    \mathcal{T} =
+    \int_{t'=t_{0}}^{t_{f}}
+    (C(t') + D_{\mathcal{A}}(t')) (1 + \rho)^{-(t'-t_{0})} \text{ d}t'
+\end{equation}
+
+The economic model parameters used in the following example are given in the table below.
+
+\begin{center}
+ \begin{tabular}{|c || c | c | c | c | c | c | c||}
+ \hline
+ Experiment &
+ Global World Product (GWP) &
+ $\beta$ &
+ $\rho$ &
+ $C_{\phi}$ &
+ $C_{\varphi}$ &
+ $C_{\lambda}$ &
+ $C_{\chi}$ \\
+ Name &
+ [\si{\$/yr}] &
+ [\si{GWP/\celsius^{2}}] &
+ &
+ [\si{GWP}] &
+ [\si{GWP}] &
+ [\si{GWP}] &
+ [\si{GWP}] \\[0.5ex]
+ \hline\hline
+ Example &
+ 100 &
+ 0.01 &
+ 0.03 &
+ 0.05 &
+ 0.05 &
+ 0.1 &
+ 0.15 \\ 
+ \hline
+\end{tabular}
+\end{center}
+
+\subsection{Optimization Method}
+
+As a crude first attempt at optimizing the control parameters $\mathcal{A} = \{\phi, \varphi, \lambda, \chi\}$, we use a simple gradient descent algorithm (with momentum) to final the minimum of the modified cost function
+
+\begin{equation}
+    \mathcal{T}_{M} =
+    \int_{t'=t_{0}}^{t_{f}}
+    (C(t') + D_{\mathcal{A}}(t')) (1 + \rho)^{-(t'-t_{0})} \text{ d}t'
+    + \tau \sum_{\alpha \in \mathcal{A}} \left( \sum_{t} \left(\pdv{\alpha}{t} \right)^{2} + \alpha(t_{0})^{2} \right),
+\end{equation}
+where $\tau = 200$ is large relative to $\mathcal{T}$ and the new terms are ad-hoc modifications that enforce additional constraints on the optimization: the first term in the sum effectively enforces continuity of the control parameters in time and the second term asserts that there is no deployment of climate control technologies in 2020, $\alpha(t_{0})=0$.
+
+We begin the optimization algorithm with an arbitrary (but physically possible) initial guess, depicted in Figure \ref{fig-initial-guess}. In this initial scenario, all of the climate control parameters increase linearly with time from zero deployment in 2020 to varying levels of deployment in 2100 (Figure \ref{fig-initial-guess}a). As a result of aggressive emissions reductions and gradually increasing deployment of negative emissions technologies, CO$_{2}$ concentrations peak at $c_{\phi, \varphi} = \SI{550}{ppm}$ in around 2070 and decrease thereafter. As a result of these controls on carbon and a small deployment of solar geoengineering, peak at $T_{\lambda, \phi, \varphi} = \SI{2.4}{\celsius}$, temporarily overshooting the $\SI{2}{\celsius}$ before cooling to below $\SI{2}{\celsius}$ by 2095. By chance, we have chosen an initial guess for which the total (controlled) costs of climate change are substantially smaller than the uncontrolled damages. This is not guaranteed to be the case – naive deployment of climate control technologies can lead to total costs which exceed the uncontrolled damages! This is increasingly likely to occur if the costs of controls are higher than assumed here (e.g. either be increasing $C_{\alpha}$ or by assuming deployment costs follow $f_{\text{high}}$).
+
+\begin{figure}[htb!]
+\noindent\includegraphics[width=1.0\textwidth]{figures/model_trajectories_initial_guess.png}
+\centering
+\caption{(a) Idealized no-policy baseline emissions scenario. (b) Three different idealized functions for the cost scaling of climate control technologies. (c) The fraction of cost discounted by year under a 2\% utility discount rate.}
+\label{fig-initial-guess}
+\end{figure}
+
+\subsection{Results}
+The results of the optimization process are shown in 
+
+\begin{figure}[htb!]
+\noindent\includegraphics[width=1.0\textwidth]{figures/model_trajectories_optimized.png}
+\centering
+\caption{(a) Idealized no-policy baseline emissions scenario. (b) Three different idealized functions for the cost scaling of climate control technologies. (c) The fraction of cost discounted by year under a 2\% utility discount rate.}
+\label{fig-optimized}
 \end{figure}
 
 %\bibliographystyle{naturemag}
