@@ -176,7 +176,7 @@ We begin the optimization algorithm with an arbitrary (but physically possible) 
 \end{figure}
 
 \subsection{Results}
-The results of the optimization process are shown in 
+The results of the optimization process are shown in Figure \ref{fig-optimized}. In contrast to our initial guesses of deployment trajectories, the optimal solution includes rapid deployment of emissions reductions and negative emissions (Figure \ref{fig-optimized}a). Emissions reductions are phased out starting around 2060, as the baseline emissions begin decreasing and fractional emissions reductions thus become less effective at decreasing climate damages. Negative emissions are similarly phased out, though not as rapidly as emissions reductions because their effectiveness depends only on the baseline emissions at 2020, not the simultaneous baseline emissions. As a result of these controls on carbon, concentrations increase at roughly half the rate of the baseline scenario before plateauing at \SI{550}{ppm} around 2080 (Figure \ref{fig-optimized}b). Adaptation and geoengineering are gradually deployed, replacing negative emissions and emissions reductions in the second half of the century (Figure \ref{fig-optimized}a).
 
 \begin{figure}[htb!]
 \noindent\includegraphics[width=1.0\textwidth]{figures/model_trajectories_optimized.png}
@@ -184,6 +184,27 @@ The results of the optimization process are shown in
 \caption{(a) Idealized no-policy baseline emissions scenario. (b) Three different idealized functions for the cost scaling of climate control technologies. (c) The fraction of cost discounted by year under a 2\% utility discount rate.}
 \label{fig-optimized}
 \end{figure}
+
+Temperatures increase gradually before plateauing at about \SI{2.4}{\celsius} around 2080 (Figure \ref{fig-optimized}c). While the temperature anomaly reaches the same maximum of $T_{\phi, \varphi, \lambda} = \SI{2.4}{\celsius}$ in the optimal solution as in the initial guess (Figure \ref{fig-optimized}c and Figure \ref{fig-initial-guess}c), the optimal solution reaches its maximum about 25 years later, resulting in dramatically less yearly controlled climate damages after discounting (green lines in Figure \ref{fig-optimized}d and Figure \ref{fig-initial-guess}d). While the optimal solution results in larger total yearly discounted costs than both the uncontrolled damages and the initial guess, the total yearly costs after 2030 are substantially less than both the initial guess and the uncontrolled damages. The total discounted cost from 2020 to 2100 is the integral under the yearly cost curves in Figures \ref{fig-initial-guess}d and \ref{fig-optimized}d. The total discounted cost in the optimal solution is smaller than both the the uncontrolled cost and the cost of the initial guess by about a factor of two.
+
+\section{Next steps}
+
+\subsection{Improved optimization algorithm}
+
+I am new to optimization and did the simplest thing I could think of. The primary downsides of this approach are: 1) it assumes we reach the first minimum we reach from our initial guess is the global minimum (perhaps this is a fine assumption for this relatively small number of dimensions and smooth cost function); 2) it is slow (~20 seconds per simulation), making large ensemble simulations (e.g. stochastic or monte carlo) intractable for the time being; 3) the imposed constraints are ad-hoc and somewhat arbitrary (is there a better way of imposing continutiy and initial / boundary conditions?).
+
+\subsection{Imposing a budget constraint}
+
+I have taken the approach of minimizing the total cost of climate change, including both the cost due to (controlled or uncontrolled) climate damages and the cost of deploying climate control technologies. Jon Deutch's approach was somewhat different: he prescribed a total budget and aimed to minimize the controlled climate damages within the prescribed budget. I think both are equally interesting.
+
+\subsection{Transient heat and carbon uptake}
+Anthropogenically-emitted carbon and heat trapped by anthropogenically-emitted carbon do not stay in the atmosphere once emitted. Over the last hundred of so years, $90\%$ of anthropogenic heat and $30\%$ of anthrogenic carbon have been absorbed by the ocean, by exchange with atmosphere at the sea surface and subsequent turbulent transfer into the deep ocean. \textcolor{BlueViolet}{[About $20\%$ of the carbon was also absorbed by the biosphere, but for our purposes we can probably ignore this process).]}
+
+We are effectively ignoring both of these important transient uptake processes and could incorporate both with simple two-box models.
+
+\subsection{Monte Carlo simulations}
+
+Our model currently doesn't take into account any uncertainty or stochastic effects. One could imagine myriad additional complexities, but some a physical climate scientists' perspective, one of the most interesting additions would be uncertainty in the equilibrium climate sensitivity. The consensus view is that the equilibrium climate sensitivity is between about $\SI{1.5}{\celsius}$ and $\SI{4.5}{\celsius}$. Given the non-linearities in the climate damage and deployment cost functions, the projection of uncertainties in the equilibrium climate sensitivity onto the optimal controls may be interesting.
 
 %\bibliographystyle{naturemag}
 %\bibliography{climate-model-performance.bib,manual_refs.bib}
