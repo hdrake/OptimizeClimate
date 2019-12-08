@@ -78,7 +78,7 @@ total_cost_constrained(model::ClimateModel) = (
 )
 
 discounted_total_cost(model::ClimateModel) = (
-    sum(net_cost(model) .* discounting(model.economics, t))
+    sum(net_cost(model) .* discounting(model.economics, model.domain))
 )
 
 discounted_total_cost_constrained(model::ClimateModel) = (
