@@ -86,6 +86,7 @@ function plot_ensemble(ensemble::Dict{String, ClimateModel})
         if first
             ylabel(L"fraction of control technology deployed $\alpha$")
             xlabel("year")
+            xlim([model.domain[1], model.domain[end]])
             title("optimized control deployments")
             legend()
             annotate(s="a)",xy=(0,1.02),xycoords="axes fraction",fontsize=12)
@@ -99,6 +100,7 @@ function plot_ensemble(ensemble::Dict{String, ClimateModel})
             legend()
             ylabel(L"CO₂ concentration $c$ (ppm)")
             xlabel("year")
+            xlim([model.domain[1], model.domain[end]])
             title("concentrations scenarios")
             annotate(s="b)",xy=(0,1.02),xycoords="axes fraction",fontsize=12)
         end
@@ -112,8 +114,8 @@ function plot_ensemble(ensemble::Dict{String, ClimateModel})
             plot(model.domain,2.0.*ones(size(model.domain)), "k--", label="Paris Goal")
             ylabel(L"warming $δT$ ($^{\circ}$C)")
             xlabel("year")
-            ylim([0,4.0])
-            legend()
+            xlim([model.domain[1], model.domain[end]])
+            legend(loc="upper left")
             title("warming since 1850")
             annotate(s="c)",xy=(0,1.02),xycoords="axes fraction",fontsize=12)
         end
@@ -127,6 +129,7 @@ function plot_ensemble(ensemble::Dict{String, ClimateModel})
         if first
             ylabel(L"discounted costs (10$^{12}$ \$)")
             xlabel("year")
+            xlim([model.domain[1], model.domain[end]])
             legend()
             annotate(s="d)",xy=(0,1.02),xycoords="axes fraction",fontsize=12)
             first=false
@@ -134,5 +137,5 @@ function plot_ensemble(ensemble::Dict{String, ClimateModel})
     end
     
     tight_layout()
-    savefig("figures/ensemble_state.png", bbox_inches="tight", dpi=100)
+    savefig("figures/ensemble_state.png", bbox_inches="tight", dpi=200)
 end
