@@ -1,11 +1,12 @@
 function ∇cost(model::ClimateModel)
     Δcontrol = 1.e-6
-    ∇ = zeros((length(model.domain), length(fieldnames(Controls))))
+    domain_idx = (model.domain .>= model.present_year)
+    ∇ = zeros((length(model.domain[domain_idx]), length(fieldnames(Controls))))
     for (control_idx, controlname) in enumerate(fieldnames(Controls))
-        for time_idx in 1:length(model.domain)
-            ∇[time_idx,control_idx] = ((
+        for (idx, t_idx) in enumerate((1:length(model.domain))[domain_idx])
+            ∇[idx, control_idx] = ((
                     discounted_total_cost_constrained(perturbed_model(
-                            model, controlname, time_idx, Δcontrol)
+                            model, controlname, t_idx, Δcontrol)
                     ) -
                     discounted_total_cost_constrained(model)
                 ) / Δcontrol
@@ -21,13 +22,15 @@ function is_converged(∇, tolerance)
 end
 
 function optimize!(model::ClimateModel, tolerance=1.e-6)
+    domain_idx = (model.domain .>= model.present_year)
+    
     ∇ = ∇cost(model)
     previous_update_vector = zeros(size(∇))
     
     iterations = 0
     while !is_converged(∇, tolerance)
         ∇ = ∇cost(model)
-        learning_rate = 1.e-3
+        learning_rate = 1.e-4
         momentum_fraction = 0.9
         update_vector = (
             ∇ .* learning_rate + 
@@ -35,19 +38,19 @@ function optimize!(model::ClimateModel, tolerance=1.e-6)
         )
         
         for (control_idx, controlname) in enumerate(fieldnames(Controls))
-            getfield(model.controls, controlname) .-= (
+            getfield(model.controls, controlname)[domain_idx] .-= (
                 update_vector[:,control_idx]
             )
         end
         
         previous_update_vector = copy(update_vector)
 
-        if iterations>200
+        if iterations>500
+            print("Converged after $iterations iterations. ")
             break
         else
             iterations+=1
         end
-        
     end
-    print("Converged after $iterations iterations.\n")
+    print("Converged after $iterations iterations. ")
 end

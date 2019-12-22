@@ -4,9 +4,10 @@ f_med(α::Array) = α.^2 # shape of individual cost functions
 f_high(α::Array) = (α ./ (1. .- α)).^2 # shape of individual cost functions
 
 function baseline_emissions(t::Array{Float64,1})
-    q = 5. .* ones(size(t)); # emissions scenario
-    q[40:81] .= q[1] * (40. .-(0.:1.:41.))/40.
-    q[81:end] .= 0.
+    q = zeros(size(t))
+    q[(t.<=2060)] = 5. .* ones(size(t[(t.<=2060)])); # emissions scenario
+    q[(t.>2060) .& (t.<=2100)] .= 5. * (40. .- (t[(t.>2060) .& (t.<=2100)] .- 2060.))/40.
+    q[(t.>2100)] .= 0.
     return q
 end
 
@@ -32,16 +33,34 @@ CO₂(model::ClimateModel) = (
     (
         model.δT_pre .+
         model.ϵ .* log.( CO₂(model)./ model.CO₂_init )
-        ) .* (1. .- model.controls.geoeng).^2
+        ) .* (1. .- model.controls.geoeng)
 )
 
+function discounting(model::ClimateModel)
+    discount = (1. .+ model.economics.utility_discount_rate) .^ (-(t .- model.present_year))
+    discount[t .< model.present_year] .= 0.
+    
+    return discount
+end
+    
 damage_cost_baseline(model::ClimateModel) = (
     model.economics.β .* δT_baseline(model).^2
+)
+
+discounted_damage_cost_baseline(model::ClimateModel) = (
+    model.economics.β .* δT_baseline(model).^2 .*
+    discounting(model)
 )
 
 damage_cost(model::ClimateModel) = (
     (1. .- model.controls.adapt) .*
     model.economics.β .* δT(model).^2
+)
+
+discounted_damage_cost(model::ClimateModel) = (
+    (1. .- model.controls.adapt) .*
+    model.economics.β .* δT(model).^2 .*
+    discounting(model)
 )
 
 control_cost(model::ClimateModel) = (
@@ -51,14 +70,29 @@ control_cost(model::ClimateModel) = (
     model.economics.adapt_cost .* f_med(model.controls.adapt)
 )
 
-discounting(economics::Economics, t::Array{Float64,1}) = (1. .+ economics.utility_discount_rate) .^ (-(t .- t[1]))
+discounted_control_cost(model::ClimateModel) = (
+    (
+        model.economics.reduce_cost .* f_med(model.controls.reduce) .+
+        model.economics.remove_cost .* f_med(model.controls.remove) .+
+        model.economics.geoeng_cost .* f_med(model.controls.geoeng) .+
+        model.economics.adapt_cost .* f_med(model.controls.adapt)
+    ) .* discounting(model)
+)
 
 net_cost(model::ClimateModel) = (
     damage_cost(model) .+ control_cost(model)
 )
 
+discounted_net_cost(model::ClimateModel) = (
+    (damage_cost(model) .+ control_cost(model)) .* discounting(model)
+)
+
 total_cost(model::ClimateModel) = (
     sum(net_cost(model))
+)
+
+discounted_total_cost(model::ClimateModel) = (
+    sum(net_cost(model) .* discounting(model))
 )
 
 total_cost_constrained(model::ClimateModel) = (
@@ -70,15 +104,11 @@ total_cost_constrained(model::ClimateModel) = (
         sum(diff(model.controls.adapt).^2)
     ) +
     500. * (
-        model.controls.reduce[1].^2 .+
-        model.controls.remove[1].^2 .+
-        model.controls.geoeng[1].^2 .+
-        model.controls.adapt[1].^2
+        (model.controls.reduce[1] - model.economics.reduce_init).^2 .+
+        (model.controls.remove[1] - model.economics.remove_init).^2 .+
+        (model.controls.geoeng[1] - model.economics.geoeng_init).^2 .+
+        (model.controls.adapt[1] - model.economics.adapt_init).^2
     )
-)
-
-discounted_total_cost(model::ClimateModel) = (
-    sum(net_cost(model) .* discounting(model.economics, model.domain))
 )
 
 discounted_total_cost_constrained(model::ClimateModel) = (
@@ -90,10 +120,10 @@ discounted_total_cost_constrained(model::ClimateModel) = (
         sum(diff(model.controls.adapt).^2)
     ) +
     500. * (
-        model.controls.reduce[1].^2 .+
-        model.controls.remove[1].^2 .+
-        model.controls.geoeng[1].^2 .+
-        model.controls.adapt[1].^2
+        (model.controls.reduce[1] - model.economics.reduce_init).^2 .+
+        (model.controls.remove[1] - model.economics.remove_init).^2 .+
+        (model.controls.geoeng[1] - model.economics.geoeng_init).^2 .+
+        (model.controls.adapt[1] - model.economics.adapt_init).^2
     )
 )
 
@@ -105,5 +135,8 @@ function perturbed_model(model::ClimateModel, controlname::Symbol, time_idx::Int
         deepcopy(model.controls.adapt)
     )
     getfield(perturbed_controls, controlname)[time_idx] = getfield(perturbed_controls, controlname)[time_idx] + Δcontrol
-    return ClimateModel(model.name, model.ECS, model.domain, perturbed_controls, model.economics, model.CO₂_init, model.δT_pre)
+    return ClimateModel(
+        model.name, model.ECS, model.domain, perturbed_controls,
+        model.economics, model.present_year, model.CO₂_init, model.δT_pre
+    )
 end
