@@ -5,10 +5,9 @@ function ∇cost(model::ClimateModel)
     for (control_idx, controlname) in enumerate(fieldnames(Controls))
         for (idx, t_idx) in enumerate((1:length(model.domain))[domain_idx])
             ∇[idx, control_idx] = ((
-                    discounted_total_cost_constrained(perturbed_model(
-                            model, controlname, t_idx, Δcontrol)
-                    ) -
-                    discounted_total_cost_constrained(model)
+                    discounted_total_cost_constrained(
+                        perturbed_model(model, controlname, t_idx, Δcontrol)
+                    ) - discounted_total_cost_constrained(model)
                 ) / Δcontrol
             )
         end

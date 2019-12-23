@@ -3,20 +3,32 @@ f_low(α::Array) = (α ./ (1. .+ α)).^2 # shape of individual cost functions
 f_med(α::Array) = α.^2 # shape of individual cost functions
 f_high(α::Array) = (α ./ (1. .- α)).^2 # shape of individual cost functions
 
-function baseline_emissions(t::Array{Float64,1})
+function baseline_emissions(t::Array{Float64,1}, q0::Float64, t0::Float64, Δt::Float64)
     q = zeros(size(t))
-    q[(t.<=2060)] = 5. .* ones(size(t[(t.<=2060)])); # emissions scenario
-    q[(t.>2060) .& (t.<=2100)] .= 5. * (40. .- (t[(t.>2060) .& (t.<=2100)] .- 2060.))/40.
-    q[(t.>2100)] .= 0.
+    q[t .<= t0] = q0 .* ones(size(t[t .<= t0])); # emissions scenario
+    q[(t .> t0) .& (t .<= (t0+Δt))] .= q0 * (Δt .- (t[(t .> t0) .& (t .<= (t0 + Δt))] .- t0))/Δt
+    q[t .> (t0 + Δt)] .= 0.
     return q
 end
 
-CO₂_baseline(model::ClimateModel) = model.CO₂_init .+ cumsum(baseline_emissions(model.domain))
+baseline_emissions(t::Array{Float64,1}) = baseline_emissions(t::Array{Float64,1}, 5., 2060., 40.)
+
+function CO₂_baseline(model::ClimateModel)
+    
+    CO₂_baseline = zeros(size(model.domain))
+    CO₂_baseline[model.domain .<= model.present_year] = CO₂(model)[model.domain .<= model.present_year]
+    CO₂_baseline[model.domain .> model.present_year] = (
+        CO₂_baseline[model.domain .== model.present_year] .+
+        cumsum(model.economics.baseline_emissions[model.domain .> model.present_year])
+    )
+    
+    return CO₂_baseline
+end
 
 CO₂(model::ClimateModel) = (
-    CO₂_baseline(model) .-
-    cumsum(baseline_emissions(model.domain) .* model.controls.reduce) .-
-    cumsum(baseline_emissions(model.domain)[1] .* model.controls.remove)
+    model.CO₂_init .+
+    cumsum(model.economics.baseline_emissions .* (1. .- model.controls.reduce)) .-
+    cumsum(model.economics.baseline_emissions[1] .* model.controls.remove)
 );
 
 δT_baseline(model::ClimateModel) = (

@@ -1,3 +1,4 @@
+
 struct Controls
     reduce::Array{Float64,1}
     remove::Array{Float64,1}
@@ -18,6 +19,8 @@ struct Economics
     remove_init::Float64
     geoeng_init::Float64
     adapt_init::Float64
+    
+    baseline_emissions::Array{Float64,1}
 end
 
 # economic parameters
@@ -25,10 +28,11 @@ end
 utility_discount_rate = 0.014 #2 # utility discount rate (Stern review value)
 GWP = 100. # Global World Product (10^12 $/yr)
 
-Economics() = Economics(
+Economics(t) = Economics(
     β, utility_discount_rate,
     0.05*GWP, 0.05*GWP, 0.25*GWP, 0.15*GWP,
-    0., 0., 0., 0.
+    0., 0., 0., 0.,
+    baseline_emissions(Array(2020:1.:2100))
 )
 
 nondim_linear(t::Array) = (t .- t[1])/(t[end] - t[1]);
