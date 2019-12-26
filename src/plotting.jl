@@ -19,7 +19,7 @@ function plot_setup(model::ClimateModel)
 
     tight_layout()
 
-    savefig("figures/model_setup.png", bbox_inches="tight", dpi=100)
+    savefig("../figures/model_setup.png", bbox_inches="tight", dpi=100)
 end
 
 function plot_state(model::ClimateModel)
@@ -108,7 +108,7 @@ function plot_state(model::ClimateModel)
 
     tight_layout()
 
-    savefig(string("figures/model_state_",Int64(round(model.present_year)),".png"), bbox_inches="tight", dpi=100)
+    savefig(string("../figures/model_state_",Int64(round(model.present_year)),".png"), bbox_inches="tight", dpi=100)
 end
 
 function plot_ensemble_state(ensemble::Dict{String, ClimateModel})
@@ -176,7 +176,7 @@ function plot_ensemble_state(ensemble::Dict{String, ClimateModel})
     end
     
     tight_layout()
-    savefig("figures/ensemble_state.png", bbox_inches="tight", dpi=200)
+    savefig("../figures/ensemble_state.png", bbox_inches="tight", dpi=200)
 end
 
 function plot_ensemble_stats(ensemble::Dict{String, ClimateModel}, domain::Array{Float64,1})
@@ -271,6 +271,6 @@ function plot_ensemble_stats(ensemble::Dict{String, ClimateModel}, domain::Array
     annotate(s="d)",xy=(0,1.02),xycoords="axes fraction",fontsize=12)
     
     tight_layout()
-    savefig("figures/ensemble_stats.png", bbox_inches="tight", dpi=200)
+    savefig("../figures/ensemble_stats.png", bbox_inches="tight", dpi=200)
 end
 
