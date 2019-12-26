@@ -91,6 +91,10 @@ discounted_control_cost(model::ClimateModel) = (
     ) .* discounting(model)
 )
 
+discounted_total_damage_cost(model::ClimateModel) = (
+    sum(discounted_damage_cost(model))
+)
+
 net_cost(model::ClimateModel) = (
     damage_cost(model) .+ control_cost(model)
 )
@@ -152,3 +156,33 @@ function perturbed_model(model::ClimateModel, controlname::Symbol, time_idx::Int
         model.economics, model.present_year, model.CO₂_init, model.δT_pre
     )
 end
+
+function extra_ton(model::ClimateModel)
+    
+    econ = model.economics
+    
+    new_emissions_scenario = deepcopy(econ.baseline_emissions)
+    
+    one_ton = 1. /(1.25e10)
+    new_emissions_scenario[1] += one_ton
+    
+    new_economics = Economics(
+        econ.β, econ.utility_discount_rate,
+        econ.reduce_cost, econ.remove_cost,
+        econ.geoeng_cost, econ.adapt_cost,
+        0., 0., 0., 0.,
+        new_emissions_scenario
+    );
+    
+    return ClimateModel(
+        model.name, model.ECS, model.domain,
+        model.controls, new_economics,
+        model.present_year, model.CO₂_init,
+        model.δT_pre
+    )
+end
+
+SCC(model::ClimateModel) = Int64(round((
+    discounted_total_cost(model) -
+    discounted_total_cost(extra_ton(model))
+)*1.e12))
