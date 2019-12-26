@@ -20,7 +20,7 @@ function is_converged(∇, tolerance)
     return sum(∇.^2) < tolerance
 end
 
-function optimize!(model::ClimateModel, tolerance=1.e-3)
+function optimize!(model::ClimateModel, tolerance=1.e-4)
     domain_idx = (model.domain .>= model.present_year)
     
     ∇ = ∇cost(model)
