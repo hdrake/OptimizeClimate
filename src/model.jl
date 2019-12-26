@@ -50,7 +50,23 @@ struct Economics
     adapt_init::Float64
     
     baseline_emissions::Array{Float64,1}
+    extra_CO₂::Array{Float64,1}
 end
+
+Economics(β, utility_discount_rate, reduce_cost, remove_cost, geoeng_cost, adapt_cost, reduce_init, remove_init, geoeng_init, adapt_init, baseline_emissions) = Economics(
+    β::Float64,
+    utility_discount_rate::Float64,
+    reduce_cost::Float64,
+    remove_cost::Float64,
+    geoeng_cost::Float64,
+    adapt_cost::Float64,
+    reduce_init::Float64,
+    remove_init::Float64,
+    geoeng_init::Float64,
+    adapt_init::Float64,
+    baseline_emissions::Array{Float64,1},
+    zeros(size(baseline_emissions))
+)
 
 """
     Economics()
@@ -76,7 +92,8 @@ Economics() = Economics(
     1., 0.014,
     0.05*100., 0.05*100., 0.25*100., 0.15*100.,
     0., 0., 0., 0.,
-    baseline_emissions(Array(2020:1.:2100))
+    baseline_emissions(Array(2020:1.:2100)),
+    zeros(size(Array(2020:1.:2100)))
 )
 
 "Return a non-dimensional Array of size(t) which represents a linear increase from 0. to 1."
@@ -99,6 +116,24 @@ function init_linear_controls(t::Array{Float64,1})
     )
     return c
 end
+
+"""
+    init_zero_controls(t)
+
+Create initial guess of zero climate controls.
+
+See also: [`Controls`](@ref)
+"""
+function init_zero_controls(t::Array{Float64,1})
+    c = Controls(
+        nondim_linear(t)*0.,
+        nondim_linear(t)*0.,
+        nondim_linear(t)*0.,
+        nondim_linear(t)*0.
+    )
+    return c
+end
+
 
 """
     ClimateModel(name, ECS, domain, controls, economics, present_year, CO₂_init, δT_pre, ϵ)

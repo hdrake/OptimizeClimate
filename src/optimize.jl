@@ -20,7 +20,7 @@ function is_converged(∇, tolerance)
     return sum(∇.^2) < tolerance
 end
 
-function optimize!(model::ClimateModel, tolerance=1.e-6)
+function optimize!(model::ClimateModel, tolerance=1.e-3)
     domain_idx = (model.domain .>= model.present_year)
     
     ∇ = ∇cost(model)
@@ -29,8 +29,8 @@ function optimize!(model::ClimateModel, tolerance=1.e-6)
     iterations = 0
     while !is_converged(∇, tolerance)
         ∇ = ∇cost(model)
-        learning_rate = 1.e-4
-        momentum_fraction = 0.9
+        learning_rate = 2.e-3
+        momentum_fraction = 0.95
         update_vector = (
             ∇ .* learning_rate + 
             previous_update_vector .* momentum_fraction
@@ -43,9 +43,8 @@ function optimize!(model::ClimateModel, tolerance=1.e-6)
         end
         
         previous_update_vector = copy(update_vector)
-
+        
         if iterations>5000
-            print("Converged after $iterations iterations. ")
             break
         else
             iterations+=1

@@ -44,7 +44,7 @@ CO₂(model::ClimateModel) = (
 δT(model::ClimateModel) = (
     (
         model.δT_pre .+
-        model.ϵ .* log.( CO₂(model)./ model.CO₂_init )
+        model.ϵ .* log.( (CO₂(model) + model.economics.extra_CO₂)./ model.CO₂_init )
         ) .* (1. .- model.controls.geoeng)
 )
 
@@ -157,21 +157,22 @@ function perturbed_model(model::ClimateModel, controlname::Symbol, time_idx::Int
     )
 end
 
-function extra_ton(model::ClimateModel)
+function extra_ton(model::ClimateModel, year::Float64)
     
     econ = model.economics
     
-    new_emissions_scenario = deepcopy(econ.baseline_emissions)
+    year_idx = argmin(abs.(model.domain .- year))
     
-    one_ton = 1. /(1.25e10)
-    new_emissions_scenario[1] += one_ton
+    extra_CO₂ = zeros(size(model.domain))
+    extra_CO₂[year_idx:end] .= 1. /(1.25e10)
     
     new_economics = Economics(
         econ.β, econ.utility_discount_rate,
         econ.reduce_cost, econ.remove_cost,
         econ.geoeng_cost, econ.adapt_cost,
         0., 0., 0., 0.,
-        new_emissions_scenario
+        econ.baseline_emissions,
+        extra_CO₂
     );
     
     return ClimateModel(
@@ -182,7 +183,11 @@ function extra_ton(model::ClimateModel)
     )
 end
 
-SCC(model::ClimateModel) = Int64(round((
-    discounted_total_cost(model) -
-    discounted_total_cost(extra_ton(model))
-)*1.e12))
+extra_ton(model::ClimateModel) = extra_ton(model::ClimateModel, model.domain[1])
+
+SCC(model::ClimateModel, year::Float64) = round((
+     discounted_total_cost(extra_ton(model, year)) -
+     discounted_total_cost(model)
+)*1.e12, digits=2)
+
+SCC(model::ClimateModel) = SCC(model::ClimateModel, model.domain[1])
