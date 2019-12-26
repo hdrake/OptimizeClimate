@@ -44,7 +44,7 @@ function optimize!(model::ClimateModel, tolerance=1.e-6)
         
         previous_update_vector = copy(update_vector)
 
-        if iterations>500
+        if iterations>5000
             print("Converged after $iterations iterations. ")
             break
         else
