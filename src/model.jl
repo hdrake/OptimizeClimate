@@ -150,6 +150,7 @@ struct ClimateModel
     name::String
     ECS::Float64
     domain::Array{Float64,1}
+    dt::Float64
     controls::Controls
     economics::Economics
     present_year::Float64
@@ -158,16 +159,17 @@ struct ClimateModel
     
     ϵ::Float64
     
-    function ClimateModel(name, ECS, domain, controls, economics, present_year, CO₂_init, δT_pre)
-        
+    function ClimateModel(name, ECS, domain, dt, controls, economics, present_year,
+            CO₂_init, δT_pre)
+
         ϵ = ECS/log(2.); # Transient Warming Parameter
         
         return new(
-            name, ECS, domain, controls, economics, present_year, CO₂_init, δT_pre,
+            name, ECS, domain, dt, controls, economics, present_year, CO₂_init, δT_pre,
             ϵ)
     end
 end
 
-ClimateModel(name, ECS, domain, controls, economics, present_year) = ClimateModel(
-    name, ECS, domain, controls, economics, present_year, 415., 1.1
+ClimateModel(name, ECS, domain, dt, controls, economics, present_year) = ClimateModel(
+    name, ECS, domain, dt, controls, economics, present_year, 415., 1.1
 )
