@@ -57,18 +57,18 @@ CO₂(model::ClimateModel) = (
 );
 
 δT_baseline(model::ClimateModel) = (
-        model.δT_pre .+
+        model.δT_init .+
         model.ϵ .* log.( CO₂_baseline(model)./ CO₂_baseline(model)[1] )
 )
 
 δT_no_geoeng(model::ClimateModel) = (
-        model.δT_pre .+
+        model.δT_init .+
         model.ϵ .* log.( CO₂(model)./ CO₂(model)[1] )
 )
 
 δT(model::ClimateModel) = (
     (
-        model.δT_pre .+
+        model.δT_init .+
         model.ϵ .* log.( (CO₂(model) + model.economics.extra_CO₂)./ CO₂(model)[1] )
         ) .* (1. .- model.controls.geoeng)
 )
@@ -235,7 +235,7 @@ function extra_ton(model::ClimateModel, year::Float64)
         model.name, model.ECS, model.domain, model.dt,
         model.controls, new_economics,
         model.present_year, model.CO₂_init,
-        model.δT_pre
+        model.δT_init
     )
 end
 

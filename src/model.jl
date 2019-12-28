@@ -136,11 +136,11 @@ end
 
 
 """
-    ClimateModel(name, ECS, domain, controls, economics, present_year, CO₂_init, δT_pre, ϵ)
+    ClimateModel(name, ECS, domain, controls, economics, present_year, CO₂_init, δT_init, ϵ)
 
 Create instance of an extremely idealized integrated-assessment
 climate model in which the climate response (`CO₂` and `temperature`) is a function
-of physical input parameters (`CO₂_init`, `δT_pre`, `ECS`, `ϵ`), economic input parameters
+of physical input parameters (`CO₂_init`, `δT_init`, `ECS`, `ϵ`), economic input parameters
 (`economics`), and climate control policies (`controls`) over some time frame (`domain`).
 
 See also: [`Controls`](@ref), [`Economics`](@ref), [`CO₂`](@ref), [`δT`](@ref),
@@ -155,17 +155,17 @@ struct ClimateModel
     economics::Economics
     present_year::Float64
     CO₂_init::Float64
-    δT_pre::Float64
+    δT_init::Float64
     
     ϵ::Float64
     
     function ClimateModel(name, ECS, domain, dt, controls, economics, present_year,
-            CO₂_init, δT_pre)
+            CO₂_init, δT_init)
 
         ϵ = ECS/log(2.); # Transient Warming Parameter
         
         return new(
-            name, ECS, domain, dt, controls, economics, present_year, CO₂_init, δT_pre,
+            name, ECS, domain, dt, controls, economics, present_year, CO₂_init, δT_init,
             ϵ)
     end
 end
