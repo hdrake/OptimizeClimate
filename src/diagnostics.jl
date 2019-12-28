@@ -1,4 +1,24 @@
 
+function logistic(x::Array{Float64,1}; k=1., x0=0., increasing=true)
+    if increasing
+        sign = 1.
+    else
+        sign = -1.
+    end
+    
+    return 1. ./ (1. .+ exp.(- sign .* k .* (x .- x0)))
+end
+
+function logistic(x::Float64; k=1., x0=0., increasing=true)
+    if increasing
+        sign = 1.
+    else
+        sign = -1.
+    end
+    
+    return 1. / (1. + exp(- sign * k * (x - x0)))
+end
+
 f_low(α::Array) = (α ./ (1. .+ α)).^2 # shape of individual cost functions
 f_med(α::Array) = α.^2 # shape of individual cost functions
 f_high(α::Array) = (α ./ (1. .- α)).^2 # shape of individual cost functions
@@ -19,7 +39,10 @@ function CO₂_baseline(model::ClimateModel)
     CO₂_baseline[model.domain .<= model.present_year] = CO₂(model)[model.domain .<= model.present_year]
     CO₂_baseline[model.domain .> model.present_year] = (
         CO₂_baseline[model.domain .== model.present_year] .+
-        cumsum(model.economics.baseline_emissions[model.domain .> model.present_year])
+        cumsum(
+            model.economics.baseline_emissions[model.domain .> model.present_year] .*
+            model.dt
+        )
     )
     
     return CO₂_baseline
@@ -27,24 +50,26 @@ end
 
 CO₂(model::ClimateModel) = (
     model.CO₂_init .+
-    cumsum(model.economics.baseline_emissions .* (1. .- model.controls.reduce)) .-
-    cumsum(model.economics.baseline_emissions[1] .* model.controls.remove)
+    cumsum(model.economics.baseline_emissions .* (1. .- model.controls.reduce) .*
+        model.dt) .-
+    cumsum(model.economics.baseline_emissions[1] .* model.controls.remove .*
+        model.dt)
 );
 
 δT_baseline(model::ClimateModel) = (
-        model.δT_pre .+
-        model.ϵ .* log.( CO₂_baseline(model)./ model.CO₂_init )
+        model.δT_init .+
+        model.ϵ .* log.( CO₂_baseline(model)./ CO₂_baseline(model)[1] )
 )
 
 δT_no_geoeng(model::ClimateModel) = (
-        model.δT_pre .+
-        model.ϵ .* log.( CO₂(model)./ model.CO₂_init )
+        model.δT_init .+
+        model.ϵ .* log.( CO₂(model)./ CO₂(model)[1] )
 )
 
 δT(model::ClimateModel) = (
     (
-        model.δT_pre .+
-        model.ϵ .* log.( (CO₂(model) + model.economics.extra_CO₂)./ model.CO₂_init )
+        model.δT_init .+
+        model.ϵ .* log.( (CO₂(model) + model.economics.extra_CO₂)./ CO₂(model)[1] )
         ) .* (1. .- model.controls.geoeng)
 )
 
@@ -92,7 +117,7 @@ discounted_control_cost(model::ClimateModel) = (
 )
 
 discounted_total_damage_cost(model::ClimateModel) = (
-    sum(discounted_damage_cost(model))
+    sum(discounted_damage_cost(model) .* model.dt)
 )
 
 net_cost(model::ClimateModel) = (
@@ -104,58 +129,89 @@ discounted_net_cost(model::ClimateModel) = (
 )
 
 total_cost(model::ClimateModel) = (
-    sum(net_cost(model))
+    sum(net_cost(model) .* model.dt)
 )
 
 discounted_total_cost(model::ClimateModel) = (
-    sum(net_cost(model) .* discounting(model))
+    sum(net_cost(model) .* discounting(model)  .* model.dt)
 )
 
 total_cost_constrained(model::ClimateModel) = (
     total_cost(model) +
-    200. * (
-        sum(diff(model.controls.reduce).^2) +
-        sum(diff(model.controls.remove).^2) +
-        sum(diff(model.controls.geoeng).^2) +
-        sum(diff(model.controls.adapt).^2)
+    200. * sum(
+        logistic(
+            abs.(diff(model.controls.reduce)),
+            k=500 * 1. /20., x0=(1. /20.) * (1. + 10. /500.), increasing=true
+            ) .+
+        logistic(
+            abs.(diff(model.controls.remove)),
+            k=500 * 1. /20., x0=(1. /20.) * (1. + 10. /500.), increasing=true
+            ) .+
+        logistic(
+            abs.(diff(model.controls.geoeng)),
+            k=500 * 1. /20., x0=(1. /20.) * (1. + 10. /500.), increasing=true
+            ) .+
+        logistic(
+            abs.(diff(model.controls.adapt)),
+            k=500 * 1. /20., x0=(1. /20.) * (1. + 10. /500.), increasing=true
+            )
     ) +
     500. * (
         (model.controls.reduce[1] - model.economics.reduce_init).^2 .+
         (model.controls.remove[1] - model.economics.remove_init).^2 .+
         (model.controls.geoeng[1] - model.economics.geoeng_init).^2 .+
         (model.controls.adapt[1] - model.economics.adapt_init).^2
+    ) +
+    200. * sum(
+        logistic(model.controls.reduce, k=500., x0=1. + 10. /500., increasing=true) .+
+        logistic(model.controls.reduce, k=500., x0=0 - 10. /500., increasing=false) .+
+        logistic(model.controls.remove, k=500., x0=1. + 10. /500., increasing=true) .+
+        logistic(model.controls.remove, k=500., x0=0 - 10. /500., increasing=false) .+
+        logistic(model.controls.geoeng, k=500., x0=1. + 10. /500., increasing=true) .+
+        logistic(model.controls.geoeng, k=500., x0=0 - 10. /500., increasing=false) .+
+        logistic(model.controls.adapt, k=500., x0=1. + 10. /500., increasing=true) .+
+        logistic(model.controls.adapt, k=500., x0=0 - 10. /500., increasing=false)
     )
 )
 
-discounted_total_cost_constrained(model::ClimateModel) = (
+discounted_total_cost_constrained(model::ClimateModel; maxslope=maxslope) = (
     discounted_total_cost(model) +
-    200. * (
-        sum(diff(model.controls.reduce).^2) +
-        sum(diff(model.controls.remove).^2) +
-        sum(diff(model.controls.geoeng).^2) +
-        sum(diff(model.controls.adapt).^2)
+    discounted_total_cost(model) * sum((
+        logistic(
+            abs.(diff(model.controls.reduce) / model.dt),
+            k=100. /maxslope, x0=maxslope, increasing=true
+            ) .+
+        logistic(
+            abs.(diff(model.controls.remove) / model.dt),
+            k=100. /maxslope, x0=maxslope, increasing=true
+            ) .+
+        logistic(
+            abs.(diff(model.controls.geoeng) / model.dt),
+            k=100. /maxslope, x0=maxslope, increasing=true
+            ) .+
+        logistic(
+            abs.(diff(model.controls.adapt) / model.dt),
+            k=100. /maxslope, x0=maxslope, increasing=true
+        )) .* model.dt
     ) +
-    500. * (
+    10. * discounted_total_cost(model) * (
         (model.controls.reduce[1] - model.economics.reduce_init).^2 .+
         (model.controls.remove[1] - model.economics.remove_init).^2 .+
         (model.controls.geoeng[1] - model.economics.geoeng_init).^2 .+
         (model.controls.adapt[1] - model.economics.adapt_init).^2
+    ) +
+    discounted_total_cost(model) * sum((
+        logistic(model.controls.reduce, k=500., x0=1. + 10. /500., increasing=true) .+
+        logistic(model.controls.reduce, k=500., x0=0 - 10. /500., increasing=false) .+
+        logistic(model.controls.remove, k=500., x0=1. + 10. /500., increasing=true) .+
+        logistic(model.controls.remove, k=500., x0=0 - 10. /500., increasing=false) .+
+        logistic(model.controls.geoeng, k=500., x0=1. + 10. /500., increasing=true) .+
+        logistic(model.controls.geoeng, k=500., x0=0 - 10. /500., increasing=false) .+
+        logistic(model.controls.adapt, k=500., x0=1. + 10. /500., increasing=true) .+
+        logistic(model.controls.adapt, k=500., x0=0 - 10. /500., increasing=false)
+        ) .* model.dt
     )
 )
-
-function perturbed_model(model::ClimateModel, controlname::Symbol, time_idx::Int, Δcontrol::Float64)
-    perturbed_controls = Controls(
-        deepcopy(model.controls.reduce),
-        deepcopy(model.controls.remove),
-        deepcopy(model.controls.geoeng),
-        deepcopy(model.controls.adapt)
-    )
-    getfield(perturbed_controls, controlname)[time_idx] = getfield(perturbed_controls, controlname)[time_idx] + Δcontrol
-    return ClimateModel(
-        model.name, model.ECS, model.domain, perturbed_controls,
-        model.economics, model.present_year, model.CO₂_init, model.δT_pre
-    )
-end
 
 function extra_ton(model::ClimateModel, year::Float64)
     
@@ -176,10 +232,10 @@ function extra_ton(model::ClimateModel, year::Float64)
     );
     
     return ClimateModel(
-        model.name, model.ECS, model.domain,
+        model.name, model.ECS, model.domain, model.dt,
         model.controls, new_economics,
         model.present_year, model.CO₂_init,
-        model.δT_pre
+        model.δT_init
     )
 end
 
