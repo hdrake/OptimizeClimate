@@ -26,22 +26,25 @@ function plot_state(model::ClimateModel)
     figure(figsize=(10,12))
     
     subplot(3,2,1)
-    plot(model.domain, model.economics.baseline_emissions)
+    plot(model.domain, model.economics.baseline_emissions, label="baseline")
+    plot(model.domain, effective_emissions(model), label="controlled")
     plot(
         [model.present_year, model.present_year],
-        [0., maximum(model.economics.baseline_emissions) * 1.05],
+        [-maximum(model.economics.baseline_emissions) * 1.1, maximum(model.economics.baseline_emissions) * 1.1],
         "r--"
     )
+    plot(model.domain, zeros(size(model.domain)), "k--", alpha=0.5)
     ylabel(L"CO₂ emissions $q$ (ppm / yr)")
     xlim(model.domain[1],model.domain[end])
-    ylim(0, maximum(model.economics.baseline_emissions) * 1.05)
+    ylim(-maximum(model.economics.baseline_emissions) * 1.1, maximum(model.economics.baseline_emissions) * 1.1)
     xlabel("year")
-    title("baseline emissions")
+    title("emissions scenarios")
+    legend()
     annotate(s="a)",xy=(0,1.02),xycoords="axes fraction",fontsize=12)
 
     subplot(3,2,2)
     plot(model.domain, 1. .-discounting(model))
-    plot(model.domain, ones(size(model.domain)), "k--")
+    plot(model.domain, ones(size(model.domain)), "k--", alpha=0.5)
     plot([model.present_year, model.present_year], [0., 1.1], "r--")
     xlabel("year")
     ylabel("fraction of cost discounted")
@@ -79,7 +82,7 @@ function plot_state(model::ClimateModel)
     plot(model.domain,δT(model), label=L"$\delta T_{\varphi,\phi, \lambda}$ (controlled)")
     plot(model.domain,δT_no_geoeng(model), label=L"$\delta T_{\varphi,\phi}$ (controlled without geoengineering)")
     plot(model.domain,δT_baseline(model), label=L"$\delta T_{0}$ (baseline)")
-    plot(model.domain,2.0.*ones(size(model.domain)),"k--", label="Paris Goal")
+    plot(model.domain,2.0.*ones(size(model.domain)),"k--", label="Paris Goal", alpha=0.5)
     plot([model.present_year, model.present_year], [0., maximum(δT_baseline(model)) * 1.05], "r--")
     ylabel(L"warming $δT$ ($^{\circ}$C)")
     xlabel("year")
@@ -150,7 +153,7 @@ function plot_ensemble_state(ensemble::Dict{String, ClimateModel})
         plot(model.domain,δT_baseline(model), "C2-", alpha=0.05, label=L"$\delta T_{0}$ (baseline)")
         
         if first
-            plot(model.domain,2.0.*ones(size(model.domain)), "k--", label="Paris Goal")
+            plot(model.domain,2.0.*ones(size(model.domain)), "k--", label="Paris Goal", alpha=0.5)
             ylabel(L"warming $δT$ ($^{\circ}$C)")
             xlabel("year")
             xlim([model.domain[1], model.domain[end]])
@@ -238,7 +241,7 @@ function plot_ensemble_stats(ensemble::Dict{String, ClimateModel}, domain::Array
     fill_between(domain, first, ninth, facecolor="C2", alpha=0.3)
     plot(domain, median, "C2-", label=L"$\delta T_{0}$ (baseline)")
 
-    plot(domain, 2.0.*ones(size(domain)), "k--", label="Paris Goal")
+    plot(domain, 2.0.*ones(size(domain)), "k--", label="Paris Goal", alpha=0.5)
     ylabel(L"warming $δT$ ($^{\circ}$C)")
     xlabel("year")
     xlim([domain[1], domain[end]])
