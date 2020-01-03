@@ -1,3 +1,19 @@
+struct Physics
+    ECS::Float64
+    CO₂_init::Float64
+    δT_init::Float64
+    Cd::Float64
+    γ::Float64
+
+    B::Float64
+    τs::Float64
+    function Physics(ECS, CO₂_init, δT_init, Cd, γ)
+        B = (3.48 * (60. * 60. * 24. * 365.25)) / ECS; # Transient Warming Parameter [K (W m^-2 s yr^-1)^-1] = [K (J yr^-1)^-1 m^2]
+        τs = (Cd/B) * (B+γ)/γ
+        return new(ECS, CO₂_init, δT_init, Cd, γ, B, τs)
+    end
+end
+
 
 """
     Controls(reduce, remove, geoeng, adapt)
@@ -136,7 +152,7 @@ end
 
 
 """
-    ClimateModel(name, ECS, domain, controls, economics, present_year, CO₂_init, δT_init, ϵ)
+    ClimateModel(name, domain, dt, present_year, economics, physics, controls)
 
 Create instance of an extremely idealized integrated-assessment
 climate model in which the climate response (`CO₂` and `temperature`) is a function
@@ -148,28 +164,10 @@ See also: [`Controls`](@ref), [`Economics`](@ref), [`CO₂`](@ref), [`δT`](@ref
 """
 struct ClimateModel
     name::String
-    ECS::Float64
     domain::Array{Float64,1}
     dt::Float64
-    controls::Controls
-    economics::Economics
     present_year::Float64
-    CO₂_init::Float64
-    δT_init::Float64
-    
-    ϵ::Float64
-    
-    function ClimateModel(name, ECS, domain, dt, controls, economics, present_year,
-            CO₂_init, δT_init)
-
-        ϵ = ECS/log(2.); # Transient Warming Parameter
-        
-        return new(
-            name, ECS, domain, dt, controls, economics, present_year, CO₂_init, δT_init,
-            ϵ)
-    end
+    economics::Economics
+    physics::Physics
+    controls::Controls
 end
-
-ClimateModel(name, ECS, domain, dt, controls, economics, present_year) = ClimateModel(
-    name, ECS, domain, dt, controls, economics, present_year, 415., 1.1
-)
