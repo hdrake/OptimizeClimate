@@ -1,4 +1,7 @@
-function optimize_controls!(model::ClimateModel; maxslope = 1. /20.)
+function optimize_controls!(
+        model::ClimateModel; maxslope = 1. /20.,
+        obj_option="net_cost", temp_goal = 2., budget=10., expenditure = 0.5
+    )
     model_optimizer = Model(with_optimizer(Ipopt.Optimizer))
 
     f_med_JuMP(α) = α^2
@@ -26,14 +29,6 @@ function optimize_controls!(model::ClimateModel; maxslope = 1. /20.)
     end
 
     register(model_optimizer, :discounting_JuMP, 1, discounting_JuMP, autodiff=true)
-
-    k = 100. /maxslope
-    x0 = maxslope
-    function logistic_JuMP(x)
-        return 1. / (1. + exp(- k * (x - x0)))
-    end
-
-    register(model_optimizer, :logistic_JuMP, 1, logistic_JuMP, autodiff=true)
 
     q = model.economics.baseline_emissions
     N = length(model.domain)
@@ -93,26 +88,111 @@ function optimize_controls!(model::ClimateModel; maxslope = 1. /20.)
         @constraint(model_optimizer, dχdt[i] == (χ[i+1] - χ[i]) / model.dt)
     end
 
-    # objective function to minimize
-    @NLobjective(model_optimizer, Min, 
-        sum(
-            (
-                (1 - χ[i]) * model.economics.β *
-                (model.δT_init + model.ϵ * log_JuMP(
-                    (model.CO₂_init + cumsum_qφϕ[i]) /
-                    (model.CO₂_init + cumsum_qφϕ[1])
-                ))^2 *
-                (1 - λ[i])^2 +
-                model.economics.remove_cost * f_med_JuMP(ϕ[i]) +
-                model.economics.reduce_cost * f_med_JuMP(φ[i]) +
-                model.economics.geoeng_cost * f_med_JuMP(λ[i]) +
-                model.economics.adapt_cost * f_med_JuMP(χ[i])
-            ) *
-            discounting_JuMP(model.domain[i]) *
-            model.dt
-        for i=1:N)
-    )
+    if obj_option == "net_cost"
+        # objective function to minimize
+        @NLobjective(model_optimizer, Min, 
+            sum(
+                (
+                    (1 - χ[i]) * model.economics.β *
+                    (model.δT_init + model.ϵ * log_JuMP(
+                        (model.CO₂_init + cumsum_qφϕ[i]) /
+                        (model.CO₂_init + cumsum_qφϕ[1])
+                    ))^2 *
+                    (1 - λ[i])^2 +
+                    model.economics.remove_cost * f_med_JuMP(ϕ[i]) +
+                    model.economics.reduce_cost * f_med_JuMP(φ[i]) +
+                    model.economics.geoeng_cost * f_med_JuMP(λ[i]) +
+                    model.economics.adapt_cost * f_med_JuMP(χ[i])
+                ) *
+                discounting_JuMP(model.domain[i]) *
+                model.dt
+            for i=1:N)
+        )
+        
+    elseif obj_option == "temp"
+        @NLobjective(model_optimizer, Min,
+            sum(
+                (
+                    model.economics.remove_cost * f_med_JuMP(ϕ[i]) +
+                    model.economics.reduce_cost * f_med_JuMP(φ[i]) +
+                    model.economics.geoeng_cost * f_med_JuMP(λ[i]) +
+                    model.economics.adapt_cost * f_med_JuMP(χ[i])
+                ) *
+                discounting_JuMP(model.domain[i]) *
+                model.dt
+            for i=1:N)
+        )
+        
+        temp_goal_idx = argmin(abs.(model.domain .- 2100.))
+        
+        for i in 1:N
+            @NLconstraint(model_optimizer,
+                (
+                    (model.δT_init + model.ϵ * log_JuMP(
+                        (model.CO₂_init + cumsum_qφϕ[i]) /
+                        (model.CO₂_init + cumsum_qφϕ[1])
+                    )) * (1 - λ[i])
+                ) <= temp_goal
+            )
+        end
 
+    elseif obj_option == "budget"
+        @NLobjective(model_optimizer, Min,
+            sum(
+                (
+                    (1 - χ[i]) * model.economics.β *
+                    (model.δT_init + model.ϵ * log_JuMP(
+                        (model.CO₂_init + cumsum_qφϕ[i]) /
+                        (model.CO₂_init + cumsum_qφϕ[1])
+                    ))^2 *
+                    (1 - λ[i])^2
+                ) *
+                discounting_JuMP(model.domain[i]) *
+                model.dt
+            for i=1:N)
+        )
+        
+        @NLconstraint(model_optimizer,
+            sum(
+                (
+                    model.economics.remove_cost * f_med_JuMP(ϕ[i]) +
+                    model.economics.reduce_cost * f_med_JuMP(φ[i]) +
+                    model.economics.geoeng_cost * f_med_JuMP(λ[i]) +
+                    model.economics.adapt_cost * f_med_JuMP(χ[i])
+                ) *
+                discounting_JuMP(model.domain[i]) *
+                model.dt
+            for i=1:N) <= budget
+        )
+        
+    elseif obj_option == "expenditure"
+        @NLobjective(model_optimizer, Min,
+            sum(
+                (
+                    (1 - χ[i]) * model.economics.β *
+                    (model.δT_init + model.ϵ * log_JuMP(
+                        (model.CO₂_init + cumsum_qφϕ[i]) /
+                        (model.CO₂_init + cumsum_qφϕ[1])
+                    ))^2 *
+                    (1 - λ[i])^2
+                ) *
+                discounting_JuMP(model.domain[i]) *
+                model.dt
+            for i=1:N)
+        )
+        
+        for i in 1:N
+            @NLconstraint(model_optimizer,
+                (
+                    model.economics.remove_cost * f_med_JuMP(ϕ[i]) +
+                    model.economics.reduce_cost * f_med_JuMP(φ[i]) +
+                    model.economics.geoeng_cost * f_med_JuMP(λ[i]) +
+                    model.economics.adapt_cost * f_med_JuMP(χ[i])
+                ) <= expenditure
+            )
+        end
+    end
+    
     @time optimize!(model_optimizer)
     
     getfield(model.controls, :remove)[domain_idx] = value.(ϕ)[domain_idx]

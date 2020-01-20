@@ -68,32 +68,45 @@ Economics(β, utility_discount_rate, reduce_cost, remove_cost, geoeng_cost, adap
     zeros(size(baseline_emissions))
 )
 
+
+GWP = 100. # global world product (trillion $ / year)
+
+β = 0.02*GWP/(3.0)^2 # damages (trillion USD / year / celsius^2)
+utility_discount_rate = 0.025 # ρ (relative low value from Stern review)
+
+# Control technology cost scales, as fraction of GWP (cost scale is for full deployment, α=1.)
+reduce_cost = 0.01*GWP;
+remove_cost = 0.02*GWP;
+geoeng_cost = 0.05*GWP;
+adapt_cost = 0.03*GWP;
+
+baseline_emissions_scenario = baseline_emissions(t, 5., 2080., 40.)
+
 """
     Economics()
 
 Create data structure for economic input parameters for `ClimateModel` struct with default values.
 
 Default parameters are:
-- `β`=1. × 10^12 USD / (°C)^2
-- `utility_discount_rate` = 0.014 (roughly Stern review median value of 1.4%)
-- `reduce_cost` = 5. × 10^12 USD
-- `remove_cost` = 5. × 10^12 USD
-- `geoeng_cost` = 25. × 10^12 USD
-- `adapt_cost` = 15. × 10^12 USD
-- `[control]_init` = 0. USD
-- `baseline_emissions` = baseline_emissions(t::Array{Float64,1}, 5., 2060., 40.)
+- `β`= 0.222 × 10^12 USD / (°C)^2
+- `utility_discount_rate` = 0.025 (between Stern review median value of 1.4% and Nordhaus values)
+- `reduce_cost` = 1. × 10^12 USD
+- `remove_cost` = 2. × 10^12 USD
+- `geoeng_cost` = 5. × 10^12 USD
+- `adapt_cost` = 3. × 10^12 USD
+- `[control]_init` = 0.
+- `baseline_emissions` = baseline_emissions(t::Array{Float64,1}, 5., 2080., 40.)
 
 The default baseline emissions scenario corresponds to flat emissions of 5 ppm / year
-from 2020 to 2060 and linearly decreasing from 5 ppm / year in 2060 to 0 ppm / year in 2100.
+from 2020 to 2080 and linearly decreasing from 5 ppm / year in 2080 to 0 ppm / year in 2120.
 
 See also: [`ClimateModel`](@ref), [`baseline_emissions`](@ref)
 """
 Economics() = Economics(
-    1., 0.014,
-    0.05*100., 0.05*100., 0.25*100., 0.15*100.,
-    0., 0., 0., 0.,
-    baseline_emissions(Array(2020:1.:2100)),
-    zeros(size(Array(2020:1.:2100)))
+    GWP, β,
+    reduce_cost, remove_cost, geoeng_cost, adapt_cost,
+    0., 0., 0., 0., # Assumed initial condition of zero control deployments in 2020
+    baseline_emissions_scenario
 )
 
 "Return a non-dimensional Array of size(t) which represents a linear increase from 0. to 1."

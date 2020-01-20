@@ -33,6 +33,11 @@ end
 
 baseline_emissions(t::Array{Float64,1}) = baseline_emissions(t::Array{Float64,1}, 5., 2060., 40.)
 
+effective_emissions(model::ClimateModel) = (
+    model.economics.baseline_emissions .* (1. .- model.controls.reduce) .-
+    model.economics.baseline_emissions[1] .* model.controls.remove
+)
+
 function CO₂_baseline(model::ClimateModel)
     
     CO₂_baseline = zeros(size(model.domain))

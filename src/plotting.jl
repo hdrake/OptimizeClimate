@@ -1,114 +1,111 @@
-function plot_setup(model::ClimateModel)
-
-    figure(figsize=(8,4))
-    subplot(1,2,1)
-    plot(model.domain, model.economics.baseline_emissions)
-    ylabel(L"CO₂ emissions $q$ (ppm / yr)")
-    xlabel("year")
-    title("baseline emissions")
-    annotate(s="a)",xy=(0,1.02),xycoords="axes fraction",fontsize=12)
-
-    subplot(1,2,2)
-    plot(model.domain, 1. .-discounting(model))
-    plot(model.domain, ones(size(model.domain)), "r--")
-    xlabel("year")
-    ylabel("fraction of cost discounted")
-    xlim(model.domain[1],model.domain[end])
-    ylim(0,1.05)
-    annotate(s="c)",xy=(0,1.02),xycoords="axes fraction",fontsize=12)
-
-    tight_layout()
-
-    savefig("../figures/model_setup.png", bbox_inches="tight", dpi=100)
-end
-
 function plot_state(model::ClimateModel)
-    figure(figsize=(10,12))
+    figure(figsize=(14,8))
     
-    subplot(3,2,1)
-    plot(model.domain, model.economics.baseline_emissions)
-    plot(
-        [model.present_year, model.present_year],
-        [0., maximum(model.economics.baseline_emissions) * 1.05],
-        "r--"
-    )
+    subplot(2,3,1)
+    plot(model.domain, model.economics.baseline_emissions, label="no-policy baseline")
+    plot(model.domain, effective_emissions(model), label="controlled")
+    if model.present_year != model.domain[1]
+        plot(
+            [model.present_year, model.present_year],
+            [-maximum(model.economics.baseline_emissions) * 1.1, maximum(model.economics.baseline_emissions) * 1.1],
+            "r--"
+        )
+    end
+    plot(model.domain, zeros(size(model.domain)), "k--", alpha=0.5)
     ylabel(L"CO₂ emissions $q$ (ppm / yr)")
     xlim(model.domain[1],model.domain[end])
-    ylim(0, maximum(model.economics.baseline_emissions) * 1.05)
+    ylim(-maximum(model.economics.baseline_emissions) * 1.1, maximum(model.economics.baseline_emissions) * 1.1)
     xlabel("year")
-    title("baseline emissions")
-    annotate(s="a)",xy=(0,1.02),xycoords="axes fraction",fontsize=12)
-
-    subplot(3,2,2)
-    plot(model.domain, 1. .-discounting(model))
-    plot(model.domain, ones(size(model.domain)), "k--")
-    plot([model.present_year, model.present_year], [0., 1.1], "r--")
-    xlabel("year")
-    ylabel("fraction of cost discounted")
-    xlim(model.domain[1],model.domain[end])
-    ylim(0,1.1)
-    annotate(s="c)",xy=(0,1.02),xycoords="axes fraction",fontsize=12)
-    
-    subplot(3,2,3)
-    plot(model.domain, model.controls.remove, label=L"$\phi$ (negative emissions)")
-    plot(model.domain, model.controls.reduce, label=L"$\varphi$ (emissions reductions)")
-    plot(model.domain, model.controls.adapt, label=L"$\chi$ (adaptation)")
-    plot(model.domain, model.controls.geoeng, label=L"$\lambda$ (geoengineering)")
-    plot([model.present_year, model.present_year], [0., 1.], "r--")
-    ylabel(L"fraction of control technology deployed $\alpha$")
-    xlabel("year")
-    xlim(model.domain[1],model.domain[end])
-    ylim([0,1])
-    title("optimized control deployments")
+    title("emissions scenarios")
+    grid(true)
     legend()
     annotate(s="a)",xy=(0,1.02),xycoords="axes fraction",fontsize=12)
 
-    subplot(3,2,4)
-    plot(model.domain, CO₂(model), label=L"$c_{\phi,\varphi}(t)$")
-    plot(model.domain, CO₂_baseline(model), label=L"$c_{0}(t)$")
-    plot([model.present_year, model.present_year], [0., maximum(CO₂_baseline(model))*1.05], "r--")
+    subplot(2,3,2)
+    plot(model.domain, CO₂_baseline(model), label=L"$c_{0}(t)$ (no-policy baseline)")
+    plot(model.domain, CO₂(model), label=L"$c_{\phi,\varphi}(t)$ (controlled)")
+    if model.present_year != model.domain[1]
+        plot([model.present_year, model.present_year], [0., maximum(CO₂_baseline(model))*1.05], "r--")
+    end
     legend()
     ylabel(L"CO₂ concentration $c$ (ppm)")
     xlabel("year")
     xlim(model.domain[1],model.domain[end])
     ylim([0., maximum(CO₂_baseline(model))*1.05])
+    grid(true)
     title("concentrations scenarios")
     annotate(s="b)",xy=(0,1.02),xycoords="axes fraction",fontsize=12)
+    
+    subplot(2,3,3)
+    plot(model.domain, model.controls.remove, label=L"$\phi$ (negative emissions)")
+    plot(model.domain, model.controls.reduce, label=L"$\varphi$ (emissions reductions)")
+    plot(model.domain, model.controls.adapt, label=L"$\chi$ (adaptation)")
+    plot(model.domain, model.controls.geoeng, label=L"$\lambda$ (geoengineering)")
+    if model.present_year != model.domain[1]
+        plot([model.present_year, model.present_year], [0., 1.], "r--")
+    end
+    ylabel(L"fraction of control technology deployed $\alpha$")
+    xlabel("year")
+    xlim(model.domain[1],model.domain[end])
+    ylim([0,1])
+    title("optimized control deployments")
+    grid(true)
+    legend()
+    annotate(s="c)",xy=(0,1.02),xycoords="axes fraction",fontsize=12)
+    
+    subplot(2,3,4)
+    plot(model.domain, f_med(model.controls.remove) * model.economics.remove_cost, label=L"$C_{\phi} f(\phi)$ (negative emissions)")
+    plot(model.domain, f_med(model.controls.reduce) * model.economics.reduce_cost, label=L"$C_{\varphi} f(\varphi)$ (emissions reductions)")
+    plot(model.domain, f_med(model.controls.adapt) * model.economics.adapt_cost, label=L"$C_{\chi} f(\chi)$ (adaptation)")
+    plot(model.domain, f_med(model.controls.geoeng) * model.economics.geoeng_cost, label=L"$C_{\lambda} f(\lambda)$ (geoengineering)")
+    ylabel(L"cost of climate controls (10$^{12}$ \$ / year)")
+    xlabel("year")
+    xlim(model.domain[1],model.domain[end])
+    grid(true)
+    title("costs of deploying climate controls")
+    legend()
+    annotate(s="d)",xy=(0,1.02),xycoords="axes fraction",fontsize=12)
 
-    subplot(3,2,5)
+    subplot(2,3,5)
+    plot(model.domain,δT_baseline(model), label=L"$\delta T_{0}$ (baseline)")
     plot(model.domain,δT(model), label=L"$\delta T_{\varphi,\phi, \lambda}$ (controlled)")
     plot(model.domain,δT_no_geoeng(model), label=L"$\delta T_{\varphi,\phi}$ (controlled without geoengineering)")
-    plot(model.domain,δT_baseline(model), label=L"$\delta T_{0}$ (baseline)")
-    plot(model.domain,2.0.*ones(size(model.domain)),"k--", label="Paris Goal")
-    plot([model.present_year, model.present_year], [0., maximum(δT_baseline(model)) * 1.05], "r--")
+    plot(model.domain,2.0.*ones(size(model.domain)),"k--", alpha=0.5)
+    plot(model.domain,1.5.*ones(size(model.domain)),"k--", alpha=0.5)
+    if model.present_year != model.domain[1]
+        plot([model.present_year, model.present_year], [0., maximum(δT_baseline(model)) * 1.05], "r--")
+    end
     ylabel(L"warming $δT$ ($^{\circ}$C)")
     xlabel("year")
     xlim(model.domain[1],model.domain[end])
     ylim([0., maximum(δT_baseline(model)) * 1.05])
     legend()
+    grid(true)
     title("warming since 1850")
-    annotate(s="c)",xy=(0,1.02),xycoords="axes fraction",fontsize=12)
+    annotate(s="e)",xy=(0,1.02),xycoords="axes fraction",fontsize=12)
 
-    subplot(3,2,6)
-    plot(model.domain, net_cost(model) .* discounting(model), label="total (controlled) cost")
-    plot(model.domain, control_cost(model) .* discounting(model), label="cost of controls")
-    plot(model.domain, damage_cost(model) .* discounting(model), label="controlled damages")
+    subplot(2,3,6)
     plot(model.domain, damage_cost_baseline(model) .* discounting(model), label="uncontrolled damages")
-    plot(
-        [model.present_year, model.present_year],
-        [0., maximum(damage_cost_baseline(model) .* discounting(model)) * 1.05],
-        "r--"
-    )
+    plot(model.domain, damage_cost(model) .* discounting(model), label="controlled damages")
+    plot(model.domain, control_cost(model) .* discounting(model), label="cost of controls")
+    plot(model.domain, net_cost(model) .* discounting(model), label="net cost (controlled damages + cost of controls)")
+    if model.present_year != model.domain[1]
+        plot(
+            [model.present_year, model.present_year],
+            [0., maximum(damage_cost_baseline(model) .* discounting(model)) * 1.25],
+            "r--"
+        )
+    end
     ylabel(L"discounted costs (10$^{12}$ \$)")
     xlabel("year")
     xlim(model.domain[1],model.domain[end])
-    ylim([0., maximum(damage_cost_baseline(model) .* discounting(model)) * 1.05])
+    ylim([0., maximum(damage_cost_baseline(model) .* discounting(model)) * 1.25])
     legend()
-    annotate(s="d)",xy=(0,1.02),xycoords="axes fraction",fontsize=12)
+    grid(true)
+    annotate(s="f)",xy=(0,1.02),xycoords="axes fraction",fontsize=12)
 
     tight_layout()
 
-    savefig(string("../figures/model_state_",Int64(round(model.present_year)),".png"), bbox_inches="tight", dpi=100)
 end
 
 function plot_ensemble_state(ensemble::Dict{String, ClimateModel})
@@ -150,7 +147,7 @@ function plot_ensemble_state(ensemble::Dict{String, ClimateModel})
         plot(model.domain,δT_baseline(model), "C2-", alpha=0.05, label=L"$\delta T_{0}$ (baseline)")
         
         if first
-            plot(model.domain,2.0.*ones(size(model.domain)), "k--", label="Paris Goal")
+            plot(model.domain,2.0.*ones(size(model.domain)), "k--", label="Paris Goal", alpha=0.5)
             ylabel(L"warming $δT$ ($^{\circ}$C)")
             xlabel("year")
             xlim([model.domain[1], model.domain[end]])
@@ -238,7 +235,7 @@ function plot_ensemble_stats(ensemble::Dict{String, ClimateModel}, domain::Array
     fill_between(domain, first, ninth, facecolor="C2", alpha=0.3)
     plot(domain, median, "C2-", label=L"$\delta T_{0}$ (baseline)")
 
-    plot(domain, 2.0.*ones(size(domain)), "k--", label="Paris Goal")
+    plot(domain, 2.0.*ones(size(domain)), "k--", label="Paris Goal", alpha=0.5)
     ylabel(L"warming $δT$ ($^{\circ}$C)")
     xlabel("year")
     xlim([domain[1], domain[end]])
