@@ -1,3 +1,4 @@
+
 struct Physics
     ECS::Float64
     CO₂_init::Float64
@@ -13,7 +14,6 @@ struct Physics
         return new(ECS, CO₂_init, δT_init, Cd, γ, B, τs)
     end
 end
-
 
 """
     Controls(reduce, remove, geoeng, adapt)
@@ -69,48 +69,22 @@ struct Economics
     extra_CO₂::Array{Float64,1}
 end
 
-Economics(β, utility_discount_rate, reduce_cost, remove_cost, geoeng_cost, adapt_cost, reduce_init, remove_init, geoeng_init, adapt_init, baseline_emissions) = Economics(
-    β::Float64,
-    utility_discount_rate::Float64,
-    reduce_cost::Float64,
-    remove_cost::Float64,
-    geoeng_cost::Float64,
-    adapt_cost::Float64,
-    reduce_init::Float64,
-    remove_init::Float64,
-    geoeng_init::Float64,
-    adapt_init::Float64,
-    baseline_emissions::Array{Float64,1},
-    zeros(size(baseline_emissions))
-)
-
-"""
-    Economics()
-
-Create data structure for economic input parameters for `ClimateModel` struct with default values.
-
-Default parameters are:
-- `β`=1. × 10^12 USD / (°C)^2
-- `utility_discount_rate` = 0.014 (roughly Stern review median value of 1.4%)
-- `reduce_cost` = 5. × 10^12 USD
-- `remove_cost` = 5. × 10^12 USD
-- `geoeng_cost` = 25. × 10^12 USD
-- `adapt_cost` = 15. × 10^12 USD
-- `[control]_init` = 0. USD
-- `baseline_emissions` = baseline_emissions(t::Array{Float64,1}, 5., 2060., 40.)
-
-The default baseline emissions scenario corresponds to flat emissions of 5 ppm / year
-from 2020 to 2060 and linearly decreasing from 5 ppm / year in 2060 to 0 ppm / year in 2100.
-
-See also: [`ClimateModel`](@ref), [`baseline_emissions`](@ref)
-"""
-Economics() = Economics(
-    1., 0.014,
-    0.05*100., 0.05*100., 0.25*100., 0.15*100.,
-    0., 0., 0., 0.,
-    baseline_emissions(Array(2020:1.:2100)),
-    zeros(size(Array(2020:1.:2100)))
-)
+function Economics(β, utility_discount_rate, reduce_cost, remove_cost, geoeng_cost, adapt_cost, reduce_init, remove_init, geoeng_init, adapt_init, baseline_emissions)
+    return Economics(
+        β::Float64,
+        utility_discount_rate::Float64,
+        reduce_cost::Float64,
+        remove_cost::Float64,
+        geoeng_cost::Float64,
+        adapt_cost::Float64,
+        reduce_init::Float64,
+        remove_init::Float64,
+        geoeng_init::Float64,
+        adapt_init::Float64,
+        baseline_emissions::Array{Float64,1},
+        zeros(size(baseline_emissions))
+    )
+end
 
 "Return a non-dimensional Array of size(t) which represents a linear increase from 0. to 1."
 nondim_linear(t::Array) = (t .- t[1])/(t[end] - t[1]);

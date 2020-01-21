@@ -1,8 +1,8 @@
 function optimize_controls!(
-        model::ClimateModel; maxslope = 1. /20.,
+        model::ClimateModel; maxslope = 1. /30.,
         obj_option="net_cost", temp_goal = 2., budget=10., expenditure = 0.5
     )
-    model_optimizer = Model(with_optimizer(Ipopt.Optimizer))
+    model_optimizer = Model(with_optimizer(Ipopt.Optimizer, print_level=0))
 
     f_med_JuMP(α) = α^2
     register(model_optimizer, :f_med_JuMP, 1, f_med_JuMP, autodiff=true)
@@ -234,7 +234,8 @@ function optimize_controls!(
         end
     end
     
-    @time optimize!(model_optimizer)
+    optimize!(model_optimizer)
+    print("Found optimal solution for model name: ", model.name)
     
     getfield(model.controls, :remove)[domain_idx] = value.(ϕ)[domain_idx]
     getfield(model.controls, :reduce)[domain_idx] = value.(φ)[domain_idx]
@@ -242,3 +243,36 @@ function optimize_controls!(
     getfield(model.controls, :adapt)[domain_idx] = value.(χ)[domain_idx]
     
 end
+
+
+function step_forward(model::ClimateModel, Δt::Float64, q0::Float64, t0::Float64, Δt0::Float64)
+
+    present_year = deepcopy(model.present_year) + Δt
+    present_idx = deepcopy(argmin(abs.(model.domain .- present_year)))
+    name = string(Int64(round(present_year)));
+    
+    controls = Controls(
+        deepcopy(model.controls.reduce),
+        deepcopy(model.controls.remove),
+        deepcopy(model.controls.geoeng),
+        deepcopy(model.controls.adapt)
+    )
+    
+    new_emissions = zeros(size(model.domain))
+    new_emissions[model.domain .< model.present_year] = deepcopy(model.economics.baseline_emissions)[model.domain .< model.present_year]
+    new_emissions[model.domain .>= model.present_year] = deepcopy(baseline_emissions(model.domain, q0, t0, Δt0))[model.domain .>= model.present_year]
+    
+    economics = Economics(
+        β, utility_discount_rate,
+        reduce_cost, remove_cost, geoeng_cost, adapt_cost,
+        0., 0., 0., 0.,
+        new_emissions
+    )
+    model = ClimateModel(
+        name, model.ECS, model.domain, model.dt, controls, economics, present_year,
+    );
+    return model
+end
+
+step_forward(model::ClimateModel, Δt::Float64, q0::Float64) = step_forward(model::ClimateModel, Δt::Float64, q0::Float64, 2080., 40.)
+step_forward(model::ClimateModel, Δt::Float64) = step_forward(model::ClimateModel, Δt::Float64, 5., 2080., 40.)
