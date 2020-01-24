@@ -37,8 +37,8 @@ function optimize_controls!(
     @variables(model_optimizer, begin
             0. <= ϕ[1:N] <= 1.  # negative emissions
             0. <= φ[1:N] <= 1.  # emissions reductions
-            0. <= χ[1:N] <= 1.  # geoengineering
-            0. <= λ[1:N] <= 1.  # adapt
+            0. <= λ[1:N] <= 1.  # geoengineering
+            0. <= χ[1:N] <= 1.  # adapt
     end)
 
     ϕ₀ = model.economics.remove_init
