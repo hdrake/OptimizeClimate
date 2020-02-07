@@ -1,6 +1,7 @@
 function optimize_controls!(
         model::ClimateModel; maxslope = 1. /30.,
-        obj_option="net_cost", temp_goal = 2., budget=10., expenditure = 0.5
+        obj_option="net_cost", temp_goal = 2., budget=10., expenditure = 0.5,
+        max_deployment=Dict("remove"=>1., "reduce"=>1., "geoeng"=>1., "adapt"=>1.)
     )
     model_optimizer = Model(with_optimizer(Ipopt.Optimizer, print_level=0))
 
@@ -35,10 +36,10 @@ function optimize_controls!(
 
     # constraints on control variables
     @variables(model_optimizer, begin
-            0. <= ϕ[1:N] <= 1.  # negative emissions
-            0. <= φ[1:N] <= 1.  # emissions reductions
-            0. <= λ[1:N] <= 1.  # geoengineering
-            0. <= χ[1:N] <= 1.  # adapt
+            0. <= ϕ[1:N] <= max_deployment["remove"]  # negative emissions
+            0. <= φ[1:N] <= max_deployment["reduce"]  # emissions reductions
+            0. <= λ[1:N] <= max_deployment["geoeng"]  # geoengineering
+            0. <= χ[1:N] <= max_deployment["adapt"]  # adapt
     end)
 
     ϕ₀ = model.economics.remove_init
@@ -202,7 +203,6 @@ function optimize_controls!(
     getfield(model.controls, :adapt)[domain_idx] = value.(χ)[domain_idx]
     
 end
-
 
 function step_forward(model::ClimateModel, Δt::Float64, q0::Float64, t0::Float64, Δt0::Float64)
 
