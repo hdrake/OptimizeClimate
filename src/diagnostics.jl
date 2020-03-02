@@ -196,7 +196,7 @@ SCC(model::ClimateModel) = SCC(model::ClimateModel, model.domain[1])
 GWP = 100. # global world product (trillion $ / year)
 
 β = 0.02*GWP/(3.0)^2 # damages (trillion USD / year / celsius^2)
-utility_discount_rate = 0.025 # ρ (relative low value from Stern review)
+utility_discount_rate = 0.0 # ρ (relative low value from Stern review)
 
 # Control technology cost scales, as fraction of GWP (cost scale is for full deployment, α=1.)
 reduce_cost = 0.01*GWP;
