@@ -14,6 +14,7 @@
 \usepackage{parskip}
 \usepackage{lineno}
 \usepackage{float}
+\usepackage{gensymb}
 \linenumbers
 
 \setlength\parindent{0pt}
@@ -36,76 +37,103 @@
 \begin{document}
 \maketitle
 
+\section{Introduction}
+
 \section{Model formulation}
+
+Here, we describe the formulation of our optimization model framework, which consists of a physical energy balance model of Earth's climate and an idealized model of climate controls (emissions reductions, negative emissions, adaptation, and non-carbon geoengineering), which act to reduce climate damages but carry their own deployment cost (including research and development costs, deployment costs, political costs, costs of side-effect damages, etc).
 
 \subsection{CO$_{2}$ concentrations: baseline emissions, emissions reductions, and negative emissions}
 
-CO$_{2}$ concentrations start at $c_{0}(t_{0}) = \SI{415}{ppm}$ in $t_{0}=2020$ and increase according to the baseline emissions scenario $q(t)$ (in ppm / year), emissions reductions, and negative emissions. The baseline concentrations are simply $c_{0}(t) = c_{0}(t_{0}) + \int_{t'=t_{0}}^{t} q(t') \text{ d}t'$. Emissions reductions are parameterized by the fractional reduction of yearly emissions $\phi(t) \in [0,1]$ such that the annual emissions become $q(1-\phi(t))$. Negative emissions are parameterized by the fraction $\varphi(t) \in [0,1]$ of the baseline emissions $q(t_{0}) = \SI{5}{ppm/year}$ in 2020 that are sequestered from the atmosphere in a given year (either by direct air capture, afforestation, or otherwise). The CO$_{2}$ concentrations in a given year are thus given by:
+CO$_{2}$ concentrations start at $c_{0}(t_{0}) = \SI{415}{ppm}$ in $t_{0}=2020$ and increase according to the baseline emissions scenario $q(t)$ (in ppm / year), emissions reductions, and negative emissions. The baseline concentrations are simply $c_{0}(t) = c_{0}(t_{0}) + \int_{t'=t_{0}}^{t} q(t') \text{ d}t'$. While we here only model CO$_{2}$ effects, other greenhouse gases may be approximated by forcing the model with the CO$_{2}$ concentrations that result in the equivalent global-averaged forcing as the total greenhouse gas effects, referred to as CO$_{2e}$. The cooling effect of aerosols and other minor anthropogenic effects could similarly be prescribed as additional time-dependent global-mean forcing terms, which could themselves have associated damages (e.g. the negative health effects of airborne particulate matter) and could be effected by various climate controls.
+
+CO$_{2}$ emissions reductions are parameterized by the fractional reduction of yearly emissions $\varphi(t) \in [0,1]$ such that the annual emissions become $q(1-\varphi(t))$. Negative emissions are parameterized by the fraction $\phi(t) \in [0,1]$ of the baseline emissions $q(t_{0}) = \SI{5}{ppm/year}$ in 2020 that are sequestered from the atmosphere in a given year (either by direct air capture, afforestation, or otherwise). The CO$_{2}$ concentrations in a given year are thus given by:
 \begin{equation}
-    c_{\phi, \varphi}(t) = c_{0}(t_{0}) + \int_{t'=t_{0}}^{t} q(t')(1-\varphi(t')) - q(t_{0}) \phi(t') \text{ d}t'.\label{eq-CO2-conc}
+    c_{\varphi, \phi}(t) = c_{0}(t_{0}) + \int_{t'=t_{0}}^{t} q(t')(1-\varphi(t')) - q(t_{0}) \phi(t') \text{ d}t'.\label{eq-CO2-conc}
 \end{equation}
 
+A more realistic model would include an idealized carbon cycle, where roughly half of the emitted CO$_{2}$ would be taken up by the ocean (and land), with non-linear feedbacks due to the ocean's limited buffering capacity. As recently as last decade, even the most prominent integrated assessment models employed too-simple carbon cycle models which resulted in CO$_{2}$ concentration errors of up to 100\% by 2200, though they remain fairly accurate for time horizons shorter than 2100. In practice, the strong non-linearity of the ocean's carbon cycle and the complexity of even the simplest realistic models \citep[e.g.][]{Pierrehumbert_collaborator} are barriers to implementation in our current model's formulation, but may be possible. For the time being we crudely represent these carbon sinks by halving the prescribed emissions rate.
+
 \subsection{Temperature response}
-The linearized energy balance model underlying the model for the temperature response is:
+The linearized energy balance model underlying the model for the temperature response is a two-box model:
+\begin{gather}
+    c_{U} \dv{T'}{t} = -\beta T' - \gamma( T' - T_{D}') + F'(t), \label{eq.upper_ocean}
+    \\
+    c_{D} \dv{T_{D}'}{t} = \gamma (T' - T_{D}'),\label{eq.deep_ocean}
+\end{gather}
+where (\ref{eq.upper_ocean}) represents the upper ocean with a temperature anomaly $T'$ and (\ref{eq.deep_ocean}) represents the deep ocean with an average temperature $T_{D}'$. The near-surface atmosphere has a negligible heat capacity and is implicitly included in the upper ocean box, which is assumed to equilibrate rapidly with the upper ocean. The model parameters are: the upper ocean heat capacity $c_{U}$; the deep ocean heat capacity $c_{D}$; the sensitivity parameter $\beta$; the mixing rate $\gamma$; and $F'(t)$ the anthropogenic CO$_{2e}$ forcing.
+
+If the forcing $F(t)$ varies on timescales longer than the fast relaxation timescale $\tau_{U} = c_{U}/(\beta + \gamma)$ then we can ignore the time-dependence in the upper ocean and set
 \begin{equation}
-    c_{f} \dv{T}{t} = -BT + F(t),
+    T \approx \frac{F+\gamma T_{D}}{\beta + \gamma},
 \end{equation}
-where $c_{f}$ is the thermal heat capacity of the climate system, $B$ is the sensitivity parameter, $T$ is the temperature anomaly relative to a preindustrial mean (1850 to 1900), and $F(t)$ is an anthropogenic CO$_{2}$ forcing. We assume the thermal heat capacity of the climate system is sufficiently small such that $T(t)=F(t)/B$ at all times. We determine the sensitivity parameter $B$ by tuning it to the best-guess estimate of the equilibrium climate sensitivity $T_{\text{ECS}} = F_{2\times}/B = \SI{3}{\celsius}$. Since $B = F_{2\times}/T_{\text{ECS}} = F(t)/T(t)$, we have $T(t) = T_{\text{ECS}} \frac{F(t)}{F_{2\times}}$. The greenhouse gas forcing due to CO$_{2}$ is well known to be a logarithmic function of concentration, $F(t)-F(t_{0}) = b \log(\frac{c(t)}{c(t_{0})})$.
+where the evolution of the deep ocean
+\begin{equation}
+    c_{D} \dv{T_{D}}{t} \approx - \frac{\beta \gamma}{\beta + \gamma} T_{D} + \frac{\gamma}{\beta + \gamma} F
+\end{equation}
+occurs on a slow time scale $\tau_{D} \equiv \frac{c_{D}}{\beta} \frac{\beta + \gamma}{\gamma}$.
+
+% We assume the thermal heat capacity of the climate system is sufficiently small such that $T'(t)=F(t)/B$ at all times (equivalently, that ocean heat uptake is negligible in Earth's energy budget). We determine the sensitivity parameter $B$ by tuning it to the best-guess estimate of the equilibrium climate sensitivity $T_{\text{ECS}} = F_{2\times}/B = \SI{3}{\celsius}$, where $F_{2\times} \approx \SI{3.7}{W/m^{2}}$. Since $B = F_{2\times}/T_{\text{ECS}} = F'(t)/T'(t)$, we have $T'(t) = T_{\text{ECS}} \frac{F'(t)}{F_{2\times}}$. The greenhouse gas forcing due to CO$_{2}$ is well known to be a logarithmic function of concentration, $F'(t)-F'(t_{0}) = F'(t) = b \ln(\frac{c(t)}{c(t_{0})})$.
 
 The baseline temperature response to the baseline CO$_{2}$ concentrations is 
 \begin{equation}
-    T_{0}(t) = 
+    T_{0}(t) = T_{0}(t_{0}) + T_{0}'(t) =  
     T_{0}(t_{0}) + 
-    \frac{T_{\text{ECS}}}{\log(2)} \log(\frac{c_{0}(t)}{c_{0}(t_{0})}) = 
+    \frac{T_{\text{ECS}}}{\ln(2)} \ln(\frac{c_{0}(t)}{c_{0}(t_{0})}) = 
     T_{0}(t_{0}) + 
-    \epsilon \log(\frac{c_{0}(t)}{c_{0}(t_{0})}),
+    \epsilon \ln(\frac{c_{0}(t)}{c_{0}(t_{0})}),
 \end{equation}
-where $\epsilon \equiv T_{\text{ECS}} / \log(2)$ is the transient warming parameter, while for the CO$_{2}$ concentration scenario $c_{\phi,\varphi}(t)$ it is given by
+where $\epsilon \equiv T_{\text{ECS}} / \ln(2)$ is the transient warming parameter and $T_{0}(t_{0})$ is the historical temperature change between a preindustrial 1850–1900 mean and present.
+
+For the controlled CO$_{2}$ concentration scenario $c_{\varphi,\phi}(t)$ the temperature change is given by
 \begin{equation}
-    T_{\phi,\varphi}(t) =
+    T_{\varphi,\phi}(t) = T_{0}(t_{0}) + T_{\varphi, \phi}'(t) =
     T_{0}(t_{0}) + 
-    \frac{T_{\text{ECS}}}{\log(2)} \log(\frac{c_{\phi,\varphi}(t)}{c_{0}(t_{0})}) = 
+    \frac{T_{\text{ECS}}}{\ln(2)} \ln(\frac{c_{\varphi,\phi}(t)}{c_{0}(t_{0})}) = 
     T_{0}(t_{0}) + 
-    \epsilon \log(\frac{c_{\phi,\varphi}(t)}{c_{0}(t_{0})}).
+    \epsilon \ln(\frac{c_{\varphi,\phi}(t)}{c_{0}(t_{0})}).
 \end{equation}
 
 
-The temperature response can be further modified by solar radiation management or solar geongineering, which is parameterized by reducing the emissions-controlled temperature response $T_{\phi,\varphi}$ by a fraction $\lambda(t) \in [0,1]$, such that the controlled temperature response is given by:
+The temperature response can be further modified by solar radiation management or solar geongineering, which is parameterized by reducing the emissions-controlled temperature response $T_{\varphi,\phi}$ by a fraction $\lambda(t) \in [0,1]$, such that the controlled temperature response is given by:
 \begin{equation}
-    T_{\phi, \varphi, \lambda} = \left(
+    T_{\varphi, \phi, \lambda} = \left(
     T_{0}(t_{0}) + 
-    \epsilon \log(\frac{c_{\phi,\varphi}(t)}{c_{0}(t_{0})}) 
+    \epsilon \log(\frac{c_{\varphi,\phi}(t)}{c_{0}(t_{0})}) 
     \right) (1 - \lambda(t)).
 \end{equation}
 
+A more realistic model would include the transient effects of ocean heat uptake which delay the approach to equilibrium \citep{Held2014} (this implementation is \textcolor{blue}{\href{https://github.com/hdrake/OptimizeClimate/tree/two-box-temperature}{currently in development}}).
+
 \subsection{Climate damages}
 
-Yearly climate damages are assumed to be of the quadratic form $D(t) = \beta T(t)^{2}$, such that successive temperature increases are increasingly damaging. The baseline climate damages are thus
+Yearly climate damages are assumed to be of the quadratic form $D(t) = \beta T(t)^{2}$, such that successive temperature increases are increasingly damaging. The default value of the damage parameter $\beta$ is chosen to be roughly similar to the DICE model for low levels of warming \citep{Nordhaus}, resulting in damages of 2\% of global world product at \SI{2}{\celsius}. The baseline climate damages are thus
 \begin{equation}
     D_{0}(t) = \beta T_{0}(t)^{2}.
 \end{equation}
 Adaptation to climate change impacts (e.g. building sea walls, installing air conditioning units, planting climate-resilient crops) is parameterized by reducing yearly damages by a fraction $\chi(t) \in [0,1]$, such that the total controlled damages are:
 \begin{equation}
-    D_{\phi, \varphi, \lambda, \chi} = \beta \; (T_{\phi, \varphi, \lambda}(t))^{2} \; (1-\chi(t)).
+    D_{\varphi, \phi, \lambda, \chi} = \beta \; (T_{\varphi, \phi, \lambda}(t))^{2} \; (1-\chi(t)).
 \end{equation}
 
 \subsection{Control costs}
 
-The yearly cost of climate control technologies are given by
+The yearly costs of climate control technologies are given by
 \begin{equation}
     C(t) = \sum_{\alpha \in \mathcal{A}} C_{\alpha} f(\alpha(t)),
 \end{equation}
-where $\mathcal{A} = \{ \phi, \varphi, \lambda, \chi \}$ is the set of climate control technologies considered here, $C_{\alpha}$ is reference cost of each climate control technology, and $f(\alpha)$ is a function that determines how the deployment cost increases as a function of fractional deployment. Here, we will focus on the medium deployment cost scenario $f_{\text{med}}(\alpha) = \alpha^{2}$, which has the following convenient properties: 
+where $\mathcal{A} = \{ \varphi, \phi, \lambda, \chi \}$ is the set of climate control technologies considered here, $C_{\alpha}$ is the reference cost of each climate control technology, and $f(\alpha)$ is a function that determines how the deployment cost increases as a function of fractional deployment. The reference cost corresponds to the hypothetical cost of full deployment of that technology (e.g. offsetting all potential warming since preindustrial with geoengineering), but it may be more usefully tuned based on a smaller deployment threshold, such as 25\%, for which costs estimates are likely to be more reflective of both plausible short-term deployment fractions and costs. Here, we will focus on the medium deployment cost scenario $f_{\text{med}}(\alpha) = \alpha^{2}$, which has the following convenient properties: 
 \begin{itemize}
-    \item $\left. \dv{f}{\alpha}\right|_{\alpha=0} = 0$ (initial deployment is effectively free),
+    \item $\left. \dv{f}{\alpha}\right|_{\alpha=0} = 0$ (initial marginal deployment is effectively free),
     \item $f(1) = 1$ (full deployment costs $C_{\alpha}$), and
-    \item $\dv[2]{f}{\alpha} > 0$ (deployment gets progressively more and more expensive).
+    \item $\dv[2]{f}{\alpha} > 0$ (convex, such that deployment gets progressively more and more expensive).
 \end{itemize}
-We also leave open the possibility of low cost $f_{\text{low}} = \left( \frac{\alpha}{1+\alpha} \right)^{2}$ and high cost $f_{\text{high}} = \left( \frac{\alpha}{1-\alpha} \right)^{2}$ deployment scenarios but do not explore them further here. 
+We also leave open the possibility of alternative control cost scenarios, but do not explore them further here: concave cost scenarios such as $f_{\text{concave}}(\alpha) = 1-\exp{-3\alpha}$ that represent industry learning or scaling effects (as observed in past decades for photo-voltaic solar panels), mixed scenarios which transition from convex to concave such as $f_{\text{mixed}}(\alpha) = 
+\left( \frac{\alpha}{1 + \alpha} \right)^{2}$, or the representation of start-up costs that discourage non-zero but small deployments such as $f_{\text{start-up}}(\alpha) = \varepsilon +  \alpha^{2}$ (where $\varepsilon \ll 1$).
 
 \subsection{Total costs and discounting}
 
-The total yearly costs of climate change are the sum of the (uncontrolled or controlled) climate damages and the costs of control technologies. A common economic assumption is that society discounts future costs relative to present costs by a multiplicative factor $(1 + \rho)^{-(t-t_{0})}$, determined by the utility discount rate $\rho$. The discounted total cost (in dollars) of climate change from $t_{0}$ to $t_{f}$ is thus given by:
+The total yearly costs of climate change are the sum of the (uncontrolled or controlled) climate damages and the costs of control technologies. A common economic assumption is that society discounts future costs relative to present costs by a multiplicative factor $\mathcal{H}(t-t_{0})(1 + \rho)^{-(t-t_{0})}$, determined by the utility discount rate $\rho$ and where $\mathcal{H}(t)$ is the Heaviside step function. The discounted total cost (in dollars) of climate change from $t_{0}$ to $t_{f}$ is thus given by:
 \begin{equation}
     \mathcal{T} =
     \int_{t'=t_{0}}^{t_{f}}
@@ -116,36 +144,51 @@ In contrast to typical Integrated Assessment Models, which follow classic econom
 
 One argument in favor of this simplified approach to the economics is the apparent insensitivity of economic output and consumption to climate policies in IAMs such as the DICE2013 model \cite[][figures 2 and 3]{Nordhaus}.
 
-\subsection{Optimization Method}
+\subsection{Optimization Methods}
 
-As a crude first attempt at optimizing the control parameters $\mathcal{A} = \{\phi, \varphi, \lambda, \chi\}$, we use a simple gradient descent algorithm (with momentum) to find the minimum of the modified cost function
+We use the Interior Point Optimizer (\href{https://github.com/coin-or/Ipopt}{https://github.com/coin-or/Ipopt}), an open source software package for large-scale nonlinear optimization, to minimize various objective functions which correspond to different perspectives on climate policy.
 
-\begin{equation}
-    \mathcal{T}_{M} =
+\subsubsection{Minimizing discounted total costs (including both controlled damage costs and the costs of controls)}
+
+The optimization problem is:
+\begin{align}
+    && \min_{\alpha \in \mathcal{R}} \{ \mathcal{T} \} = \min_{\alpha \in \mathcal{R}} \left\{
     \int_{t'=t_{0}}^{t_{f}}
-    (C(t') + D_{\mathcal{A}}(t')) (1 + \rho)^{-(t'-t_{0})} \text{ d}t'
-    + \tau \sum_{\alpha \in \mathcal{A}} \left( \sum_{t} \left(\pdv{\alpha}{t} \right)^{2} + \alpha(t_{0})^{2} \right),
-\end{equation}
-where $\tau = 200$ is large relative to $\mathcal{T}$ and the new terms are ad-hoc modifications that enforce additional constraints on the optimization: the first term in the sum effectively enforces continuity of the control parameters in time and the second term asserts that there is no deployment of climate control technologies , $\alpha(t_{0})=0$.
+    (C(t') + D_{\mathcal{A}}(t')) (1 + \rho)^{-(t'-t_{0})} \text{ d}t' \right\},
+    \\
+    & \text{s.t. }
+    & 0 \leq \alpha \leq 1\quad \text{and}\\
+    && \abs{\pdv{f_{\alpha}(\alpha(t))}{t}} < \frac{1}{30\text{ years}}.
+\end{align}
 
-\section{Next steps}
+\subsubsection{Minimizing total control costs subject to a temperature goal (e.g. Paris Agreement)}
 
-\subsection{Improved optimization algorithm}
+The optimization problem is:
+\begin{align}
+    & & \min_{\alpha \in \mathcal{R}} \{ \mathcal{T} \} = \min_{\alpha \in \mathcal{R}} \left\{
+    \int_{t'=t_{0}}^{t_{f}}
+    C(t') (1 + \rho)^{-(t'-t_{0})} \text{ d}t' \right\},
+    \\
+    & \text{s.t. }
+    & T_{\varphi, \phi, \lambda}(t) < T_{\text{goal}},\\
+    && 0 \leq \alpha \leq 1\text{, and}\\
+    &&\abs{\pdv{f_{\alpha}(\alpha(t))}{t}} < \frac{1}{30\text{ years}},
+\end{align}
+where $T_{goal}$ is the goal temperature.
 
-I am new to optimization and did the simplest thing I could think of. The primary downsides of this approach are: 1) it assumes we reach the first minimum we reach from our initial guess is the global minimum (perhaps this is a fine assumption for this relatively small number of dimensions and smooth cost function); 2) it is slow (~20 seconds per simulation), making large ensemble simulations (e.g. stochastic or monte carlo) intractable for the time being; 3) the imposed constraints are ad-hoc and somewhat arbitrary (is there a better way of imposing continutiy and initial / boundary conditions?).
+\subsubsection{Minimizing controlled damage costs subject to a fixed budget for controls}
 
-\subsection{Imposing a budget constraint}
-
-I have taken the approach of minimizing the total cost of climate change, including both the cost due to (controlled or uncontrolled) climate damages and the cost of deploying climate control technologies. Jon Deutch's approach was somewhat different: he prescribed a total budget and aimed to minimize the controlled climate damages within the prescribed budget. I think both are equally interesting.
-
-\subsection{Transient heat and carbon uptake}
-Anthropogenically-emitted carbon and heat trapped by anthropogenically-emitted carbon do not stay in the atmosphere once emitted. Over the last hundred of so years, $90\%$ of anthropogenic heat and $30\%$ of anthrogenic carbon have been absorbed by the ocean, by exchange with atmosphere at the sea surface and subsequent turbulent transfer into the deep ocean. \textcolor{BlueViolet}{[About $20\%$ of the carbon was also absorbed by the biosphere, but for our purposes we can probably ignore this process).]}
-
-We are effectively ignoring both of these important transient uptake processes and could incorporate both with simple two-box models.
-
-\subsection{Monte Carlo simulations}
-
-Our model currently doesn't take into account any uncertainty or stochastic effects. One could imagine myriad additional complexities, but some a physical climate scientists' perspective, one of the most interesting additions would be uncertainty in the equilibrium climate sensitivity. The consensus view is that the equilibrium climate sensitivity is between about $\SI{1.5}{\celsius}$ and $\SI{4.5}{\celsius}$. Given the non-linearities in the climate damage and deployment cost functions, the projection of uncertainties in the equilibrium climate sensitivity onto the optimal controls may be interesting.
+\begin{align}
+    & & \min_{\alpha \in \mathcal{R}} \{ \mathcal{T} \} = \min_{\alpha \in \mathcal{R}} \left\{
+    \int_{t'=t_{0}}^{t_{f}}
+    D_{\mathcal{A}}(t') (1 + \rho)^{-(t'-t_{0})} \text{ d}t' \right\},\\
+    & \text{s.t. }
+    & \int_{t'=t_{0}}^{t_{f}}
+    C(t') (1 + \rho)^{-(t'-t_{0})} \text{ d}t' < \mathcal{B},\\
+    &&0 \leq \alpha \leq 1\text{, and}\\
+    &&\abs{\pdv{f_{\alpha}(\alpha(t))}{t}} < \frac{1}{30\text{ years}},
+\end{align}
+where $\mathcal{B}$ is a fixed discounted budget for controls.
 
 %\bibliographystyle{naturemag}
 %\bibliography{climate-model-performance.bib,manual_refs.bib}
