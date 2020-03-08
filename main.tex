@@ -7,7 +7,8 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage[dvipsnames]{xcolor}
-\usepackage[numbers,sort&compress]{natbib}
+\usepackage[sort&compress]{natbib}
+%\usepackage{natbib}
 \usepackage{bm}
 \usepackage{url}
 \usepackage{hyperref}
@@ -39,29 +40,33 @@
 
 \section{Introduction}
 
+
+
 \section{Model formulation}
 
-Here, we describe the formulation of our optimization model framework, which consists of a physical energy balance model of Earth's climate and an idealized model of climate controls (emissions reductions, negative emissions, adaptation, and non-carbon geoengineering), which act to reduce climate damages but carry their own deployment cost (including research and development costs, deployment costs, political costs, costs of side-effect damages, etc).
+Here, we describe the formulation of our optimization model framework, which consists of a physical energy balance model of Earth's climate and an idealized model of climate controls (emissions reductions, negative emissions, adaptation, and non-carbon geoengineering), which act to reduce the damages caused by a changing climate but carry their own deployment cost (including research and development costs, deployment costs, political costs, costs of side-effect damages, etc). The model is designed to include key features of climate physics, economics, and policy as concisely as possible and in ways consistent with both fundamental theory and more comprehensive models (both physical general circulation models and climate-economic integrated assessment models). Our goal is to construct a model which yields fundamental insights into optimal management of climate change but is significantly more accessible, transparent, flexible, and computationally inexpensive than conventional models. The model is developed in open source using the Julia programming language \citep{bezanson_julia:_2017} at \text\href{github.com/hdrake/OptimizeClimate}{github.com/hdrake/OptimizeClimate} (Drake et al., 2020).
 
 \subsection{CO$_{2}$ concentrations: baseline emissions, emissions reductions, and negative emissions}
 
-CO$_{2}$ concentrations start at $c_{0}(t_{0}) = \SI{415}{ppm}$ in $t_{0}=2020$ and increase according to the baseline emissions scenario $q(t)$ (in ppm / year), emissions reductions, and negative emissions. The baseline concentrations are simply $c_{0}(t) = c_{0}(t_{0}) + \int_{t'=t_{0}}^{t} q(t') \text{ d}t'$. While we here only model CO$_{2}$ effects, other greenhouse gases may be approximated by forcing the model with the CO$_{2}$ concentrations that result in the equivalent global-averaged forcing as the total greenhouse gas effects, referred to as CO$_{2e}$. The cooling effect of aerosols and other minor anthropogenic effects could similarly be prescribed as additional time-dependent global-mean forcing terms, which could themselves have associated damages (e.g. the negative health effects of airborne particulate matter) and could be effected by various climate controls.
-
-CO$_{2}$ emissions reductions are parameterized by the fractional reduction of yearly emissions $\varphi(t) \in [0,1]$ such that the annual emissions become $q(1-\varphi(t))$. Negative emissions are parameterized by the fraction $\phi(t) \in [0,1]$ of the baseline emissions $q(t_{0}) = \SI{5}{ppm/year}$ in 2020 that are sequestered from the atmosphere in a given year (either by direct air capture, afforestation, or otherwise). The CO$_{2}$ concentrations in a given year are thus given by:
+In the absence of climate policy, we assume CO$_{2}$ concentrations in the model start at $c_{0}(t_{0}) = \SI{415}{ppm}$ in $t_{0}=2020$ and increase according to a baseline emissions scenario $q(t)$ (in ppm/year). The baseline concentrations are given by the accumulation of emissions in the atmosphere,
 \begin{equation}
-    c_{\varphi, \phi}(t) = c_{0}(t_{0}) + \int_{t'=t_{0}}^{t} q(t')(1-\varphi(t')) - q(t_{0}) \phi(t') \text{ d}t'.\label{eq-CO2-conc}
+c_{0}(t) = c_{0}(t_{0}) + \int_{t'=t_{0}}^{t} q(t') \text{ d}t'.
+\end{equation}
+The model currently has no explicit carbon cycle: baseline emissions are instead interpreted as the roughly 40\% of emissions which remain in the atmosphere, net of uptake by the terrestrial biosphere and the ocean \citep{}, and contribute to the greenhouse effect. A future version of the model will include an idealized but dynamic ocean carbon cycle \citep[e.g.][]{Glotter2014}, which captures both the initial linear uptake of carbon by the ocean and non-linear feedbacks due to the ocean's limited chemical buffering capacity. While we here only explicitly model CO$_{2}$ effects, other greenhouse gases may be approximated by forcing the model with the CO$_{2}$ concentrations that result in the equivalent global-mean forcing from all greenhouse gases, referred to as carbon dioxide-equivalent concentrations CO$_{2e}$. The radiative effects of aerosols and other minor anthropogenic effects, while not presently included, could similarly be prescribed as additional time-dependent global-mean forcing terms, which could themselves have associated damages (e.g. the negative health effects of airborne particulate matter) which could be reduced by abatement policies.
+
+CO$_{2}$ emissions reductions are parameterized by the fractional reduction of annual emissions $\varphi(t) \in [0,1]$ such that the net annual emissions become $(1-\varphi(t))q$. Negative emissions are parameterized by the fraction $\phi(t) \in [0,1]$ of the baseline emissions $q(t_{0}) = \SI{5}{ppm/year}$ in 2020 that are sequestered from the atmosphere in a given year, either by direct air capture, afforestation, or otherwise \citep{}. The CO$_{2}$ concentrations in a given year are thus given by:
+\begin{equation}
+    c_{\varphi, \phi}(t) = c_{0}(t_{0}) + \int_{t'=t_{0}}^{t} (1-\varphi(t'))q(t') - \phi(t')q(t_{0}) \text{ d}t'.\label{eq-CO2-conc}
 \end{equation}
 
-A more realistic model would include an idealized carbon cycle, where roughly half of the emitted CO$_{2}$ would be taken up by the ocean (and land), with non-linear feedbacks due to the ocean's limited buffering capacity. As recently as last decade, even the most prominent integrated assessment models employed too-simple carbon cycle models which resulted in CO$_{2}$ concentration errors of up to 100\% by 2200, though they remain fairly accurate for time horizons shorter than 2100. In practice, the strong non-linearity of the ocean's carbon cycle and the complexity of even the simplest realistic models \citep[e.g.][]{Pierrehumbert_collaborator} are barriers to implementation in our current model's formulation, but may be possible. For the time being we crudely represent these carbon sinks by halving the prescribed emissions rate.
-
 \subsection{Temperature response}
-The linearized energy balance model underlying the model for the temperature response is a two-box model:
+The temperature evolution is determined by the two-box linear energy balance model \citep[e.g][]{gregory_vertical_2000, held_probing_2010}:
 \begin{gather}
     c_{U} \dv{T'}{t} = -\beta T' - \gamma( T' - T_{D}') + F'(t), \label{eq.upper_ocean}
     \\
     c_{D} \dv{T_{D}'}{t} = \gamma (T' - T_{D}'),\label{eq.deep_ocean}
 \end{gather}
-where (\ref{eq.upper_ocean}) represents the upper ocean with a temperature anomaly $T'$ and (\ref{eq.deep_ocean}) represents the deep ocean with an average temperature $T_{D}'$. The near-surface atmosphere has a negligible heat capacity and is implicitly included in the upper ocean box, which is assumed to equilibrate rapidly with the upper ocean. The model parameters are: the upper ocean heat capacity $c_{U}$; the deep ocean heat capacity $c_{D}$; the sensitivity parameter $\beta$; the mixing rate $\gamma$; and $F'(t)$ the anthropogenic CO$_{2e}$ forcing.
+where (\ref{eq.upper_ocean}) represents the upper ocean with a temperature anomaly $T'$ and (\ref{eq.deep_ocean}) represents the deep ocean with an average temperature $T_{D}'$. The near-surface atmosphere has a negligible heat capacity and is implicitly included in the upper ocean box, which is assumed to equilibrate rapidly with the upper ocean, such that $T'$ also represents the global-mean near-surface air temperature. The model parameters are: the upper ocean heat capacity $c_{U}$; the deep ocean heat capacity $c_{D}$; the climate feedback parameter $\beta$; the ocean mixing rate $\gamma$; and $F'(t)$ the anthropogenic CO$_{2e}$ forcing.
 
 If the forcing $F(t)$ varies on timescales longer than the fast relaxation timescale $\tau_{U} = c_{U}/(\beta + \gamma)$ then we can ignore the time-dependence in the upper ocean and set
 \begin{equation}
@@ -107,18 +112,18 @@ A more realistic model would include the transient effects of ocean heat uptake 
 
 \subsection{Climate damages}
 
-Yearly climate damages are assumed to be of the quadratic form $D(t) = \beta T(t)^{2}$, such that successive temperature increases are increasingly damaging. The default value of the damage parameter $\beta$ is chosen to be roughly similar to the DICE model for low levels of warming \citep{Nordhaus}, resulting in damages of 2\% of global world product at \SI{2}{\celsius}. The baseline climate damages are thus
+Annual climate damages are assumed to be of the quadratic form $D(t) = \beta T(t)^{2}$, such that successive temperature increases are increasingly damaging. The default value of the damage parameter $\beta$ is chosen to be roughly similar to the DICE model for low levels of warming \citep{Nordhaus}, resulting in damages of 2\% of global world product at \SI{2}{\celsius}. The baseline climate damages are thus
 \begin{equation}
     D_{0}(t) = \beta T_{0}(t)^{2}.
 \end{equation}
-Adaptation to climate change impacts (e.g. building sea walls, installing air conditioning units, planting climate-resilient crops) is parameterized by reducing yearly damages by a fraction $\chi(t) \in [0,1]$, such that the total controlled damages are:
+Adaptation to climate change impacts (e.g. building sea walls, installing air conditioning units, planting climate-resilient crops) is parameterized by reducing annual damages by a fraction $\chi(t) \in [0,1]$, such that the total controlled damages are:
 \begin{equation}
     D_{\varphi, \phi, \lambda, \chi} = \beta \; (T_{\varphi, \phi, \lambda}(t))^{2} \; (1-\chi(t)).
 \end{equation}
 
 \subsection{Control costs}
 
-The yearly costs of climate control technologies are given by
+The annual costs of climate control technologies are given by
 \begin{equation}
     C(t) = \sum_{\alpha \in \mathcal{A}} C_{\alpha} f(\alpha(t)),
 \end{equation}
@@ -133,7 +138,7 @@ We also leave open the possibility of alternative control cost scenarios, but do
 
 \subsection{Total costs and discounting}
 
-The total yearly costs of climate change are the sum of the (uncontrolled or controlled) climate damages and the costs of control technologies. A common economic assumption is that society discounts future costs relative to present costs by a multiplicative factor $\mathcal{H}(t-t_{0})(1 + \rho)^{-(t-t_{0})}$, determined by the utility discount rate $\rho$ and where $\mathcal{H}(t)$ is the Heaviside step function. The discounted total cost (in dollars) of climate change from $t_{0}$ to $t_{f}$ is thus given by:
+The total annual costs of climate change are the sum of the (uncontrolled or controlled) climate damages and the costs of control technologies. A common economic assumption is that society discounts future costs relative to present costs by a multiplicative factor $\mathcal{H}(t-t_{0})(1 + \rho)^{-(t-t_{0})}$, determined by the utility discount rate $\rho$ and where $\mathcal{H}(t)$ is the Heaviside step function. The discounted total cost (in dollars) of climate change from $t_{0}$ to $t_{f}$ is thus given by:
 \begin{equation}
     \mathcal{T} =
     \int_{t'=t_{0}}^{t_{f}}
@@ -190,7 +195,7 @@ where $T_{goal}$ is the goal temperature.
 \end{align}
 where $\mathcal{B}$ is a fixed discounted budget for controls.
 
-%\bibliographystyle{naturemag}
-%\bibliography{climate-model-performance.bib,manual_refs.bib}
+%\bibliographystyle{apalike}
+%\bibliography{references.bib}
 
 \end{document}
