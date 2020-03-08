@@ -42,12 +42,12 @@ CO₂(model::ClimateModel) = (
 );
 
 FCO₂_baseline(model::ClimateModel) = (
-    (5.35 .* log.( CO₂_baseline(model)./ CO₂_baseline(model)[1]))
+    (5.35 .* log.( (CO₂_baseline(model) .+ model.economics.extra_CO₂)./ CO₂_baseline(model)[1]))
     * (60. * 60. * 24. * 365.25) # (W m^-2 s yr^-1)
 )
 
 FCO₂(model::ClimateModel) = (
-    (5.35 .* log.( CO₂(model)./ CO₂(model)[1]))
+    (5.35 .* log.( (CO₂(model) .+ model.economics.extra_CO₂)./ CO₂(model)[1]))
     * (60. * 60. * 24. * 365.25)
 )
 
