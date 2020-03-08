@@ -99,6 +99,8 @@ function plot_state(model::ClimateModel)
             "r--"
         )
     end
+    plot(model.domain,model.economics.β*(2.0^2).*ones(size(model.domain)),"k--", alpha=0.5)
+    plot(model.domain,model.economics.β*(1.5^2).*ones(size(model.domain)),"k--", alpha=0.5)
     ylabel(L"discounted costs (10$^{12}$ \$ / year)")
     xlabel("year")
     xlim(model.domain[1],model.domain[end])
@@ -117,7 +119,7 @@ function plot_ensemble_diagnostic(ensemble::Dict{String, ClimateModel}, symbols:
     plot(domain, median, "-", color=color, alpha=1.0, label=label)
 end
 
-function plot_ensemble_statistics(ensemble::Dict{String, ClimateModel}, diagnostic::Function, domain::Array{Float64,1}, color::String, label::String)
+function plot_ensemble_statistics(ensemble::Dict{String, ClimateModel}, diagnostic::Function, domain::Array{Float64,1}, color::String, label::LaTeXString)
     first, median, ninth = ensemble_diagnostic_statistics(ensemble, diagnostic, domain)
     fill_between(domain, first, ninth, facecolor=color, alpha=0.3)
     plot(domain, median, "-", color=color, alpha=1.0, label=label)
@@ -209,6 +211,7 @@ function plot_ensemble(ensemble::Dict{String, ClimateModel})
         "C2", L"$\delta T_{0}$ (baseline)"
     )
     plot(domain, 2.0.*ones(size(domain)), "k--", label="Paris Goal", alpha=0.5)
+    plot(domain, 1.5.*ones(size(domain)), "k--", alpha=0.5)
     ylabel(L"warming $δT$ ($^{\circ}$C)")
     xlabel("year")
     xlim([domain[1], domain[end]])
@@ -233,6 +236,8 @@ function plot_ensemble(ensemble::Dict{String, ClimateModel})
         ensemble, discounted_control_cost, domain,
         "C3", "cost of controls"
     )
+    plot(model.domain,model.economics.β*(2.0^2).*ones(size(model.domain)),"k--", alpha=0.5)
+    plot(model.domain,model.economics.β*(1.5^2).*ones(size(model.domain)),"k--", alpha=0.5)
     ylabel(L"discounted costs (10$^{12}$ \$ / year)")
     xlabel("year")
     xlim([domain[1], domain[end]])

@@ -1,24 +1,4 @@
 
-function logistic(x::Array{Float64,1}; k=1., x0=0., increasing=true)
-    if increasing
-        sign = 1.
-    else
-        sign = -1.
-    end
-    
-    return 1. ./ (1. .+ exp.(- sign .* k .* (x .- x0)))
-end
-
-function logistic(x::Float64; k=1., x0=0., increasing=true)
-    if increasing
-        sign = 1.
-    else
-        sign = -1.
-    end
-    
-    return 1. / (1. + exp(- sign * k * (x - x0)))
-end
-
 f_low(α::Array) = (α ./ (1. .+ α)).^2 # shape of individual cost functions
 f_med(α::Array) = α.^2 # shape of individual cost functions
 f_high(α::Array) = (α ./ (1. .- α)).^2 # shape of individual cost functions
@@ -31,7 +11,7 @@ function baseline_emissions(t::Array{Float64,1}, q0::Float64, t0::Float64, Δt::
     return q
 end
 
-baseline_emissions(t::Array{Float64,1}) = baseline_emissions(t::Array{Float64,1}, 5., 2060., 40.)
+baseline_emissions(t::Array{Float64,1}) = baseline_emissions(t::Array{Float64,1}, 10., 2080., 40.)
 
 effective_emissions(model::ClimateModel) = (
     model.economics.baseline_emissions .* (1. .- model.controls.reduce) .-
@@ -54,28 +34,67 @@ function CO₂_baseline(model::ClimateModel)
 end
 
 CO₂(model::ClimateModel) = (
-    model.CO₂_init .+
+    model.physics.CO₂_init .+
     cumsum(model.economics.baseline_emissions .* (1. .- model.controls.reduce) .*
         model.dt) .-
     cumsum(model.economics.baseline_emissions[1] .* model.controls.remove .*
         model.dt)
 );
 
+FCO₂_baseline(model::ClimateModel) = (
+    (5.35 .* log.( (CO₂_baseline(model) .+ model.economics.extra_CO₂)./ CO₂_baseline(model)[1]))
+    * (60. * 60. * 24. * 365.25) # (W m^-2 s yr^-1)
+)
+
+FCO₂(model::ClimateModel) = (
+    (5.35 .* log.( (CO₂(model) .+ model.economics.extra_CO₂)./ CO₂(model)[1]))
+    * (60. * 60. * 24. * 365.25)
+)
+
 δT_baseline(model::ClimateModel) = (
-        model.δT_init .+
-        model.ϵ .* log.( CO₂_baseline(model)./ CO₂_baseline(model)[1] )
+    model.physics.δT_init .+
+    (FCO₂_baseline(model) .+ model.physics.γ * 
+        (
+            (model.physics.τs * model.physics.B)^(-1) .*
+            exp.( - model.domain / model.physics.τs ) .*
+            cumsum(
+                exp.( model.domain / model.physics.τs ) .*
+                FCO₂_baseline(model)
+                .* model.dt
+            )
+        )
+    ) .* (model.physics.B + model.physics.γ)^-1
 )
 
 δT_no_geoeng(model::ClimateModel) = (
-        model.δT_init .+
-        model.ϵ .* log.( CO₂(model)./ CO₂(model)[1] )
+    model.physics.δT_init .+
+    (FCO₂(model) .+ model.physics.γ * 
+        (
+            (model.physics.τs * model.physics.B)^(-1) .*
+            exp.( - (model.domain .- model.domain[1]) / model.physics.τs ) .*
+            cumsum(
+                exp.( (model.domain .- model.domain[1]) / model.physics.τs ) .*
+                FCO₂(model)
+                .* model.dt
+            )
+        )
+    ) .* (model.physics.B + model.physics.γ)^-1
 )
 
-δT(model::ClimateModel) = (
-    (
-        model.δT_init .+
-        model.ϵ .* log.( (CO₂(model) + model.economics.extra_CO₂)./ CO₂(model)[1] )
-        ) .* (1. .- model.controls.geoeng)
+δT(model::ClimateModel) = ((
+        model.physics.δT_init .+
+        (FCO₂(model) .+ model.physics.γ * 
+            (
+                (model.physics.τs * model.physics.B)^(-1) .*
+                exp.( - (model.domain .- model.domain[1]) / model.physics.τs ) .*
+                cumsum(
+                    exp.( (model.domain .- model.domain[1]) / model.physics.τs ) .*
+                    FCO₂(model)
+                    .* model.dt
+                )
+            )
+        ) .* (model.physics.B + model.physics.γ)^-1
+    ) .* (1. .- model.controls.geoeng)
 )
 
 function discounting(model::ClimateModel)
@@ -141,83 +160,6 @@ discounted_total_cost(model::ClimateModel) = (
     sum(net_cost(model) .* discounting(model)  .* model.dt)
 )
 
-total_cost_constrained(model::ClimateModel) = (
-    total_cost(model) +
-    200. * sum(
-        logistic(
-            abs.(diff(model.controls.reduce)),
-            k=500 * 1. /20., x0=(1. /20.) * (1. + 10. /500.), increasing=true
-            ) .+
-        logistic(
-            abs.(diff(model.controls.remove)),
-            k=500 * 1. /20., x0=(1. /20.) * (1. + 10. /500.), increasing=true
-            ) .+
-        logistic(
-            abs.(diff(model.controls.geoeng)),
-            k=500 * 1. /20., x0=(1. /20.) * (1. + 10. /500.), increasing=true
-            ) .+
-        logistic(
-            abs.(diff(model.controls.adapt)),
-            k=500 * 1. /20., x0=(1. /20.) * (1. + 10. /500.), increasing=true
-            )
-    ) +
-    500. * (
-        (model.controls.reduce[1] - model.economics.reduce_init).^2 .+
-        (model.controls.remove[1] - model.economics.remove_init).^2 .+
-        (model.controls.geoeng[1] - model.economics.geoeng_init).^2 .+
-        (model.controls.adapt[1] - model.economics.adapt_init).^2
-    ) +
-    200. * sum(
-        logistic(model.controls.reduce, k=500., x0=1. + 10. /500., increasing=true) .+
-        logistic(model.controls.reduce, k=500., x0=0 - 10. /500., increasing=false) .+
-        logistic(model.controls.remove, k=500., x0=1. + 10. /500., increasing=true) .+
-        logistic(model.controls.remove, k=500., x0=0 - 10. /500., increasing=false) .+
-        logistic(model.controls.geoeng, k=500., x0=1. + 10. /500., increasing=true) .+
-        logistic(model.controls.geoeng, k=500., x0=0 - 10. /500., increasing=false) .+
-        logistic(model.controls.adapt, k=500., x0=1. + 10. /500., increasing=true) .+
-        logistic(model.controls.adapt, k=500., x0=0 - 10. /500., increasing=false)
-    )
-)
-
-discounted_total_cost_constrained(model::ClimateModel; maxslope=maxslope) = (
-    discounted_total_cost(model) +
-    discounted_total_cost(model) * sum((
-        logistic(
-            abs.(diff(model.controls.reduce) / model.dt),
-            k=100. /maxslope, x0=maxslope, increasing=true
-            ) .+
-        logistic(
-            abs.(diff(model.controls.remove) / model.dt),
-            k=100. /maxslope, x0=maxslope, increasing=true
-            ) .+
-        logistic(
-            abs.(diff(model.controls.geoeng) / model.dt),
-            k=100. /maxslope, x0=maxslope, increasing=true
-            ) .+
-        logistic(
-            abs.(diff(model.controls.adapt) / model.dt),
-            k=100. /maxslope, x0=maxslope, increasing=true
-        )) .* model.dt
-    ) +
-    10. * discounted_total_cost(model) * (
-        (model.controls.reduce[1] - model.economics.reduce_init).^2 .+
-        (model.controls.remove[1] - model.economics.remove_init).^2 .+
-        (model.controls.geoeng[1] - model.economics.geoeng_init).^2 .+
-        (model.controls.adapt[1] - model.economics.adapt_init).^2
-    ) +
-    discounted_total_cost(model) * sum((
-        logistic(model.controls.reduce, k=500., x0=1. + 10. /500., increasing=true) .+
-        logistic(model.controls.reduce, k=500., x0=0 - 10. /500., increasing=false) .+
-        logistic(model.controls.remove, k=500., x0=1. + 10. /500., increasing=true) .+
-        logistic(model.controls.remove, k=500., x0=0 - 10. /500., increasing=false) .+
-        logistic(model.controls.geoeng, k=500., x0=1. + 10. /500., increasing=true) .+
-        logistic(model.controls.geoeng, k=500., x0=0 - 10. /500., increasing=false) .+
-        logistic(model.controls.adapt, k=500., x0=1. + 10. /500., increasing=true) .+
-        logistic(model.controls.adapt, k=500., x0=0 - 10. /500., increasing=false)
-        ) .* model.dt
-    )
-)
-
 function extra_ton(model::ClimateModel, year::Float64)
     
     econ = model.economics
@@ -237,10 +179,8 @@ function extra_ton(model::ClimateModel, year::Float64)
     );
     
     return ClimateModel(
-        model.name, model.ECS, model.domain, model.dt,
-        model.controls, new_economics,
-        model.present_year, model.CO₂_init,
-        model.δT_init
+        model.name, model.domain, model.dt, model.present_year,
+        new_economics, model.physics, model.controls
     )
 end
 
@@ -252,41 +192,3 @@ SCC(model::ClimateModel, year::Float64) = round((
 )*1.e12, digits=2)
 
 SCC(model::ClimateModel) = SCC(model::ClimateModel, model.domain[1])
-
-GWP = 100. # global world product (trillion $ / year)
-
-β = 0.02*GWP/(3.0)^2 # damages (trillion USD / year / celsius^2)
-utility_discount_rate = 0.0 # ρ (relative low value from Stern review)
-
-# Control technology cost scales, as fraction of GWP (cost scale is for full deployment, α=1.)
-reduce_cost = 0.01*GWP;
-remove_cost = 0.02*GWP;
-geoeng_cost = 0.05*GWP;
-adapt_cost = 0.03*GWP;
-
-"""
-    Economics()
-
-Create data structure for economic input parameters for `ClimateModel` struct with default values.
-
-Default parameters are:
-- `β`= 0.222 × 10^12 USD / (°C)^2
-- `utility_discount_rate` = 0.025 (between Stern review median value of 1.4% and Nordhaus values)
-- `reduce_cost` = 1. × 10^12 USD
-- `remove_cost` = 2. × 10^12 USD
-- `geoeng_cost` = 5. × 10^12 USD
-- `adapt_cost` = 3. × 10^12 USD
-- `[control]_init` = 0.
-- `baseline_emissions` = baseline_emissions(t::Array{Float64,1}, 5., 2080., 40.)
-
-The default baseline emissions scenario corresponds to flat emissions of 5 ppm / year
-from 2020 to 2080 and linearly decreasing from 5 ppm / year in 2080 to 0 ppm / year in 2120.
-
-See also: [`ClimateModel`](@ref), [`baseline_emissions`](@ref)
-"""
-Economics(t) = Economics(
-    GWP, β,
-    reduce_cost, remove_cost, geoeng_cost, adapt_cost,
-    0., 0., 0., 0., # Assumed initial condition of zero control deployments in 2020
-    baseline_emissions(t, 5., 2080., 40.)
-)
