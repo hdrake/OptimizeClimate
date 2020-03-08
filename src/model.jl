@@ -9,7 +9,10 @@ struct Physics
     B::Float64
     τs::Float64
     function Physics(ECS, CO₂_init, δT_init, Cd, γ)
-        B = (3.48 * (60. * 60. * 24. * 365.25)) / ECS; # Transient Warming Parameter [K (W m^-2 s yr^-1)^-1] = [K (J yr^-1)^-1 m^2]
+        FCO₂_2x = 3.48 # Forcing due to doubling CO2 (Held 2009, page 2421)
+        seconds_in_year = 60. * 60. * 24. * 365.25
+        
+        B = (FCO₂_2x / ECS) * seconds_in_year; # Transient Warming Parameter [K (W m^-2 s yr^-1)^-1]
         τs = (Cd/B) * (B+γ)/γ
         return new(ECS, CO₂_init, δT_init, Cd, γ, B, τs)
     end
@@ -129,9 +132,8 @@ end
     ClimateModel(name, domain, dt, present_year, economics, physics, controls)
 
 Create instance of an extremely idealized integrated-assessment
-climate model in which the climate response (`CO₂` and `temperature`) is a function
-of physical input parameters (`CO₂_init`, `δT_init`, `ECS`, `ϵ`), economic input parameters
-(`economics`), and climate control policies (`controls`) over some time frame (`domain`).
+climate model, starting from a given year (`present_year`), economic input parameters
+(`economics`), physical climate parameters (`physics`), and climate control policies (`controls`) over some time frame (`domain`) with a given timestep (`dt`).
 
 See also: [`Controls`](@ref), [`Economics`](@ref), [`CO₂`](@ref), [`δT`](@ref),
 [`optimize!`](@ref)

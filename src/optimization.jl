@@ -1,7 +1,8 @@
 function optimize_controls!(
-        model::ClimateModel; maxslope = 1. /30.,
-        obj_option="net_cost", temp_goal = 2., budget=10., expenditure = 0.5,
-        max_deployment=Dict("remove"=>1., "reduce"=>1., "geoeng"=>1., "adapt"=>1.)
+        model::ClimateModel;
+        obj_option="temp", temp_goal = 2., budget=10., expenditure = 0.5,
+        max_deployment=Dict("remove"=>1., "reduce"=>1., "geoeng"=>1., "adapt"=>1.),
+        maxslope = 1. /30.
     )
     model_optimizer = Model(with_optimizer(Ipopt.Optimizer, print_level=0))
 
@@ -94,12 +95,21 @@ function optimize_controls!(
     );
 
     # Add constraint of rate of changes
-    @variables(model_optimizer, begin
-            -maxslope <= dϕdt[1:N-1] <= maxslope
-            -maxslope <= dφdt[1:N-1] <= maxslope
-            -maxslope <= dλdt[1:N-1] <= maxslope
-            -maxslope <= dχdt[1:N-1] <= maxslope
-    end);
+    if typeof(maxslope) == Float64
+        @variables(model_optimizer, begin
+                -maxslope <= dϕdt[1:N-1] <= maxslope
+                -maxslope <= dφdt[1:N-1] <= maxslope
+                -maxslope <= dλdt[1:N-1] <= maxslope
+                -maxslope <= dχdt[1:N-1] <= maxslope
+        end);
+    elseif typeof(maxslope) == Dict{String,Float64}
+        @variables(model_optimizer, begin
+                -maxslope["remove"] <= dϕdt[1:N-1] <= maxslope["remove"]
+                -maxslope["reduce"] <= dφdt[1:N-1] <= maxslope["reduce"]
+                -maxslope["geoeng"] <= dλdt[1:N-1] <= maxslope["geoeng"]
+                -maxslope["adapt"] <= dχdt[1:N-1] <= maxslope["adapt"]
+        end);
+    end
 
     for i in 1:N-1
         @constraint(model_optimizer, dϕdt[i] == (ϕ[i+1] - ϕ[i]) / model.dt)
@@ -152,7 +162,8 @@ function optimize_controls!(
         
         for i in 1:N
             @NLconstraint(model_optimizer,
-                (model.physics.δT_init + 
+                (1 - χ[i]) * model.economics.β *
+                ((model.physics.δT_init + 
                     (
                         5.35 * log_JuMP(
                             (model.physics.CO₂_init + cumsum_qφϕ[i]) /
@@ -162,7 +173,8 @@ function optimize_controls!(
                         exp( ( model.domain[i] / model.physics.τs )) *
                         cumsum_KFdt[i]
                     ) * (model.physics.B + model.physics.γ)^-1
-                ) * (1. - λ[i]) <= temp_goal
+                ) * (1. - λ[i])
+                )^2 <= (model.economics.β * temp_goal^2)
             )
         end
 
@@ -269,7 +281,7 @@ function step_forward(model::ClimateModel, Δt::Float64, q0::Float64, t0::Float6
         new_emissions
     )
     model = ClimateModel(
-        name, model.ECS, model.domain, model.dt, controls, economics, present_year,
+        name, model.domain, model.dt, present_year, economics, model.physics, controls,
     );
     return model
 end

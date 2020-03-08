@@ -11,7 +11,7 @@ function baseline_emissions(t::Array{Float64,1}, q0::Float64, t0::Float64, Δt::
     return q
 end
 
-baseline_emissions(t::Array{Float64,1}) = baseline_emissions(t::Array{Float64,1}, 5., 2060., 40.)
+baseline_emissions(t::Array{Float64,1}) = baseline_emissions(t::Array{Float64,1}, 10., 2080., 40.)
 
 effective_emissions(model::ClimateModel) = (
     model.economics.baseline_emissions .* (1. .- model.controls.reduce) .-
@@ -192,41 +192,3 @@ SCC(model::ClimateModel, year::Float64) = round((
 )*1.e12, digits=2)
 
 SCC(model::ClimateModel) = SCC(model::ClimateModel, model.domain[1])
-
-GWP = 100. # global world product (trillion $ / year)
-
-β = 0.02*GWP/(3.0)^2 # damages (trillion USD / year / celsius^2)
-utility_discount_rate = 0.0 # ρ (relative low value from Stern review)
-
-# Control technology cost scales, as fraction of GWP (cost scale is for full deployment, α=1.)
-reduce_cost = 0.01*GWP;
-remove_cost = 0.02*GWP;
-geoeng_cost = 0.05*GWP;
-adapt_cost = 0.03*GWP;
-
-"""
-    Economics()
-
-Create data structure for economic input parameters for `ClimateModel` struct with default values.
-
-Default parameters are:
-- `β`= 0.222 × 10^12 USD / (°C)^2
-- `utility_discount_rate` = 0.025 (between Stern review median value of 1.4% and Nordhaus values)
-- `reduce_cost` = 1. × 10^12 USD
-- `remove_cost` = 2. × 10^12 USD
-- `geoeng_cost` = 5. × 10^12 USD
-- `adapt_cost` = 3. × 10^12 USD
-- `[control]_init` = 0.
-- `baseline_emissions` = baseline_emissions(t::Array{Float64,1}, 5., 2080., 40.)
-
-The default baseline emissions scenario corresponds to flat emissions of 5 ppm / year
-from 2020 to 2080 and linearly decreasing from 5 ppm / year in 2080 to 0 ppm / year in 2120.
-
-See also: [`ClimateModel`](@ref), [`baseline_emissions`](@ref)
-"""
-Economics(t) = Economics(
-    GWP, β,
-    reduce_cost, remove_cost, geoeng_cost, adapt_cost,
-    0., 0., 0., 0., # Assumed initial condition of zero control deployments in 2020
-    baseline_emissions(t, 5., 2080., 40.)
-)
