@@ -68,13 +68,23 @@ ClimateModel(name::String) = ClimateModel(
     init_zero_controls(t)
 )
 
-ClimateModel(;t::Array{Float64,1}) = ClimateModel(
+ClimateModel(;t::Array{Float64,1}, dt::Float64) = ClimateModel(
     "default",
     t,
     dt,
     present_year,
     Economics(t),
     Physics(),
+    init_zero_controls(t)
+)
+
+ClimateModel(;ECS::Float64) = ClimateModel(
+    "default",
+    t,
+    dt,
+    present_year,
+    Economics(t),
+    Physics(ECS),
     init_zero_controls(t)
 )
 
