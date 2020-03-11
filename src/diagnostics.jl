@@ -14,7 +14,7 @@ end
 baseline_emissions(t::Array{Float64,1}) = baseline_emissions(t::Array{Float64,1}, 10., 2080., 40.)
 
 effective_emissions(model::ClimateModel) = (
-    model.economics.baseline_emissions .* (1. .- model.controls.reduce) .-
+    model.economics.baseline_emissions .* (1. .- model.controls.mitigate) .-
     model.economics.baseline_emissions[1] .* model.controls.remove
 )
 
@@ -35,7 +35,7 @@ end
 
 CO₂(model::ClimateModel) = (
     model.physics.CO₂_init .+
-    cumsum(model.economics.baseline_emissions .* (1. .- model.controls.reduce) .*
+    cumsum(model.economics.baseline_emissions .* (1. .- model.controls.mitigate) .*
         model.dt) .-
     cumsum(model.economics.baseline_emissions[1] .* model.controls.remove .*
         model.dt)
@@ -125,7 +125,7 @@ discounted_damage_cost(model::ClimateModel) = (
 )
 
 control_cost(model::ClimateModel) = (
-    model.economics.reduce_cost .* f_med(model.controls.reduce) .+
+    model.economics.mitigate_cost .* f_med(model.controls.mitigate) .+
     model.economics.remove_cost .* f_med(model.controls.remove) .+
     model.economics.geoeng_cost .* f_med(model.controls.geoeng) .+
     model.economics.adapt_cost .* f_med(model.controls.adapt)
@@ -133,7 +133,7 @@ control_cost(model::ClimateModel) = (
 
 discounted_control_cost(model::ClimateModel) = (
     (
-        model.economics.reduce_cost .* f_med(model.controls.reduce) .+
+        model.economics.mitigate_cost .* f_med(model.controls.mitigate) .+
         model.economics.remove_cost .* f_med(model.controls.remove) .+
         model.economics.geoeng_cost .* f_med(model.controls.geoeng) .+
         model.economics.adapt_cost .* f_med(model.controls.adapt)
@@ -171,7 +171,7 @@ function extra_ton(model::ClimateModel, year::Float64)
     
     new_economics = Economics(
         econ.β, econ.utility_discount_rate,
-        econ.reduce_cost, econ.remove_cost,
+        econ.mitigate_cost, econ.remove_cost,
         econ.geoeng_cost, econ.adapt_cost,
         0., 0., 0., 0.,
         econ.baseline_emissions,

@@ -19,7 +19,7 @@ struct Physics
 end
 
 """
-    Controls(reduce, remove, geoeng, adapt)
+    Controls(mitigate, remove, geoeng, adapt)
 
 Create data structure for climate control arrays Arrays along time axis,
 with bounded values ∈ [0,1].
@@ -27,7 +27,7 @@ with bounded values ∈ [0,1].
 See also: [`ClimateModel`](@ref)
 """
 struct Controls
-    reduce::Array{Float64,1}
+    mitigate::Array{Float64,1}
     remove::Array{Float64,1}
     geoeng::Array{Float64,1}
     adapt::Array{Float64,1}
@@ -36,8 +36,8 @@ end
 """
     Economics(
         β, utility_discount_rate,
-        reduce_cost, remove_cost, geoeng_cost, adapt_cost,
-        reduce_init, remove_init, geoeng_init, adapt_init,
+        mitigate_cost, remove_cost, geoeng_cost, adapt_cost,
+        mitigate_init, remove_init, geoeng_init, adapt_init,
         baseline_emissions
     )
 
@@ -58,12 +58,12 @@ struct Economics
     β::Float64
     utility_discount_rate::Float64
     
-    reduce_cost::Float64
+    mitigate_cost::Float64
     remove_cost::Float64
     geoeng_cost::Float64
     adapt_cost::Float64
     
-    reduce_init::Float64
+    mitigate_init::Float64
     remove_init::Float64
     geoeng_init::Float64
     adapt_init::Float64
@@ -72,15 +72,15 @@ struct Economics
     extra_CO₂::Array{Float64,1}
 end
 
-function Economics(β, utility_discount_rate, reduce_cost, remove_cost, geoeng_cost, adapt_cost, reduce_init, remove_init, geoeng_init, adapt_init, baseline_emissions)
+function Economics(β, utility_discount_rate, mitigate_cost, remove_cost, geoeng_cost, adapt_cost, mitigate_init, remove_init, geoeng_init, adapt_init, baseline_emissions)
     return Economics(
         β::Float64,
         utility_discount_rate::Float64,
-        reduce_cost::Float64,
+        mitigate_cost::Float64,
         remove_cost::Float64,
         geoeng_cost::Float64,
         adapt_cost::Float64,
-        reduce_init::Float64,
+        mitigate_init::Float64,
         remove_init::Float64,
         geoeng_init::Float64,
         adapt_init::Float64,

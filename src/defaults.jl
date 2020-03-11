@@ -21,7 +21,7 @@ GWP = 100. # global world product (trillion $ / year)
 utility_discount_rate = 0.0 # ρ (relative low value from Stern review)
 
 # Control technology cost scales, as fraction of GWP (cost scale is for full deployment, α=1.)
-reduce_cost = 0.01*GWP;
+mitigate_cost = 0.01*GWP;
 remove_cost = 0.02*GWP;
 geoeng_cost = 0.05*GWP;
 adapt_cost = 0.03*GWP;
@@ -34,7 +34,7 @@ Create data structure for economic input parameters for `ClimateModel` struct wi
 Default parameters are:
 - `β`= 0.222 × 10^12 USD / (°C)^2
 - `utility_discount_rate` = 0.0 (compare with Stern review median value of 1.4% and ~3% Nordhaus values)
-- `reduce_cost` = 1. × 10^12 USD
+- `mitigate_cost` = 1. × 10^12 USD
 - `remove_cost` = 2. × 10^12 USD
 - `geoeng_cost` = 5. × 10^12 USD
 - `adapt_cost` = 3. × 10^12 USD
@@ -48,7 +48,7 @@ See also: [`ClimateModel`](@ref), [`baseline_emissions`](@ref)
 """
 Economics(t) = Economics(
     β, utility_discount_rate,
-    reduce_cost, remove_cost, geoeng_cost, adapt_cost,
+    mitigate_cost, remove_cost, geoeng_cost, adapt_cost,
     0., 0., 0., 0., # Assumed initial condition of zero control deployments in 2020
     baseline_emissions(t)
 )
