@@ -2,8 +2,15 @@ function optimize_controls!(
         model::ClimateModel;
         obj_option="temp", temp_goal = 2., budget=10., expenditure = 0.5,
         max_deployment=Dict("remove"=>1., "reduce"=>1., "geoeng"=>1., "adapt"=>1.),
-        maxslope = 1. /30.
+        maxslope = 1. /30.,
+        temp_final = nothing
     )
+    if temp_final == nothing
+        temp_final = temp_goal
+    elseif temp_final >= temp_goal
+        temp_final = temp_goal
+    end
+    
     model_optimizer = Model(with_optimizer(Ipopt.Optimizer, print_level=0))
 
     f_med_JuMP(α) = α^2
@@ -160,7 +167,7 @@ function optimize_controls!(
             for i=1:N)
         )
         
-        for i in 1:N
+        for i in 1:N-1
             @NLconstraint(model_optimizer,
                 (1 - χ[i]) * model.economics.β *
                 ((model.physics.δT_init + 
@@ -177,6 +184,22 @@ function optimize_controls!(
                 )^2 <= (model.economics.β * temp_goal^2)
             )
         end
+        i=N
+        @NLconstraint(model_optimizer,
+            (1 - χ[i]) * model.economics.β *
+            ((model.physics.δT_init + 
+                (
+                    5.35 * log_JuMP(
+                        (model.physics.CO₂_init + cumsum_qφϕ[i]) /
+                        (model.physics.CO₂_init + cumsum_qφϕ[1])
+                    ) * (60. * 60. * 24. * 365.25) + model.physics.γ *
+                    (model.physics.τs * model.physics.B)^(-1) *
+                    exp( ( model.domain[i] / model.physics.τs )) *
+                    cumsum_KFdt[i]
+                ) * (model.physics.B + model.physics.γ)^-1
+            ) * (1. - λ[i])
+            )^2 <= (model.economics.β * temp_final^2)
+        )
 
     elseif obj_option == "budget"
         @NLobjective(model_optimizer, Min,
