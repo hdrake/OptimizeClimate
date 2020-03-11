@@ -5,12 +5,11 @@ function optimize_controls!(
         maxslope = Dict("mitigate"=>1. /20., "remove"=>1. /40., "geoeng"=>1. /20., "adapt"=>1. /20.),
         temp_final = nothing,
         start_deployment = Dict(
-            "mitigate"=>model.present_year,
-            "remove"=>model.present_year+20,
-            "geoeng"=> model.present_year+40,
-            "adapt"=>model.present_year
+            "mitigate"=>model.domain[1],
+            "remove"=>model.domain[1]+20,
+            "geoeng"=> model.domain[1]+40,
+            "adapt"=>model.domain[1]
         ),
-        end_deployment = Dict("mitigate"=>nothing, "remove"=>nothing, "geoeng"=>nothing, "adapt"=>nothing),
         cost_exponent = 2
     )
     
@@ -18,6 +17,12 @@ function optimize_controls!(
         temp_final = temp_goal
     elseif temp_final >= temp_goal
         temp_final = temp_goal
+    end
+    
+    for (key, item) in start_deployment
+        if item == nothing
+            start_deployment[key] = model.present_year
+        end
     end
     
     model_optimizer = Model(with_optimizer(Ipopt.Optimizer, print_level=0))
@@ -53,29 +58,51 @@ function optimize_controls!(
 
     # constraints on control variables
     @variables(model_optimizer, begin
-            0. <= R[1:N] <= max_deployment["remove"]  # negative emissions
             0. <= M[1:N] <= max_deployment["mitigate"]  # emissions reductions
+            0. <= R[1:N] <= max_deployment["remove"]  # negative emissions
             0. <= G[1:N] <= max_deployment["geoeng"]  # geoengineering
             0. <= A[1:N] <= max_deployment["adapt"]  # adapt
     end)
 
+    control_vars = Dict(
+        "mitigate" => M,
+        "remove" => R,
+        "geoeng" => G,
+        "adapt" => A
+    )
+    controls = Dict(
+        "mitigate" => model.controls.mitigate,
+        "remove" => model.controls.remove,
+        "geoeng" => model.controls.geoeng,
+        "adapt" => model.controls.adapt
+    )
+    
+    domain_idx = (model.domain .>= model.present_year)
+    
     M₀ = model.economics.mitigate_init
     R₀ = model.economics.remove_init
     G₀ = model.economics.geoeng_init
     A₀ = model.economics.adapt_init
     
-    fix(M[1], M₀; force = true)
-    fix(R[1], R₀; force = true)
-    fix(G[1], G₀; force = true)
-    fix(A[1], A₀; force = true)
+    control_inits = Dict(
+        "mitigate" => M₀,
+        "remove" => R₀,
+        "geoeng" => G₀,
+        "adapt" => A₀
+    )
     
-    domain_idx = (model.domain .>= model.present_year)
-    
-    for idx in 2:length(model.domain[.~domain_idx])
-        fix(M[idx], model.controls.mitigate[idx]; force = true)
-        fix(R[idx], model.controls.remove[idx]; force = true)
-        fix(G[idx], model.controls.geoeng[idx]; force = true)
-        fix(A[idx], model.controls.adapt[idx]; force = true)
+    for (key, control) in control_vars
+        fix(control_vars[key][1], control_inits[key]; force = true)
+
+        for idx in 2:N
+            if idx <= length(model.domain[.~domain_idx])
+                fix(control_vars[key][idx], controls[key][idx]; force = true)
+            else
+                if model.domain[idx] < start_deployment[key]
+                    fix(control_vars[key][idx], control_inits[key]; force = true)
+                end
+            end
+        end
     end
 
     # add integral function as a new variable defined by first order finite differences

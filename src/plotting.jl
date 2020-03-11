@@ -119,7 +119,7 @@ function plot_ensemble_diagnostic(ensemble::Dict{String, ClimateModel}, symbols:
     plot(domain, median, "-", color=color, alpha=1.0, label=label)
 end
 
-function plot_ensemble_statistics(ensemble::Dict{String, ClimateModel}, diagnostic::Function, domain::Array{Float64,1}, color::String, label::LaTeXString)
+function plot_ensemble_statistics(ensemble::Dict{String, ClimateModel}, diagnostic::Function, domain::Array{Float64,1}, color::String, label)
     first, median, ninth = ensemble_diagnostic_statistics(ensemble, diagnostic, domain)
     fill_between(domain, first, ninth, facecolor=color, alpha=0.3)
     plot(domain, median, "-", color=color, alpha=1.0, label=label)
