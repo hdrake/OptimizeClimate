@@ -25,7 +25,7 @@ function optimize_controls!(
         end
     end
     
-    model_optimizer = Model(with_optimizer(Ipopt.Optimizer, print_level=0))
+    model_optimizer = Model(optimizer_with_attributes(Ipopt.Optimizer))#, "print_level" => 0))
 
     f_JuMP(α) = α^cost_exponent
     register(model_optimizer, :f_JuMP, 1, f_JuMP, autodiff=true)
@@ -307,7 +307,6 @@ function optimize_controls!(
     end
     
     optimize!(model_optimizer)
-    print("Found optimal solution for model name: ", model.name)
     
     getfield(model.controls, :mitigate)[domain_idx] = value.(M)[domain_idx]
     getfield(model.controls, :remove)[domain_idx] = value.(R)[domain_idx]

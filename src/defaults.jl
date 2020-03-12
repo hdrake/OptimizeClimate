@@ -1,6 +1,6 @@
 # Model domain
 present_year = 2020.
-dt = 1. # 1-year timestep, can make longer to speed up the model
+dt = 5. # 1-year timestep, can make longer to speed up the model
 t = Array(present_year:dt:2200);
 
 # Physics
