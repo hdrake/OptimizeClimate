@@ -18,8 +18,10 @@ end
 
 baseline_emissions(t::Array{Float64,1}) = baseline_emissions(t::Array{Float64,1}, 15., 2100., 2140.)
 
+effective_baseline_emissions(model::ClimateModel) = model.physics.r * baseline_emissions(model.domain)
+
 effective_emissions(model::ClimateModel) = (
-    model.economics.baseline_emissions .* (1. .- model.controls.mitigate) .-
+    model.physics.r * model.economics.baseline_emissions .* (1. .- model.controls.mitigate) .-
     model.economics.baseline_emissions[1] .* model.controls.remove
 )
 
@@ -39,8 +41,8 @@ function CO₂_baseline(model::ClimateModel)
 end
 
 CO₂(model::ClimateModel) = (
-    model.physics.CO₂_init .+ model.physics.r * (
-        cumsum(model.economics.baseline_emissions .* (1. .- model.controls.mitigate) .*
+    model.physics.CO₂_init .+ (
+        model.physics.r * cumsum(model.economics.baseline_emissions .* (1. .- model.controls.mitigate) .*
             model.dt) .-
         cumsum(model.economics.baseline_emissions[1] .* model.controls.remove .*
             model.dt)
@@ -48,12 +50,18 @@ CO₂(model::ClimateModel) = (
 );
 
 FCO₂_baseline(model::ClimateModel) = (
-    (5.35 .* log.( (CO₂_baseline(model) .+ model.economics.extra_CO₂)./ CO₂_baseline(model)[1]))
+    5.35 .* log.( (CO₂_baseline(model) .+ model.physics.r * model.economics.extra_CO₂)./ CO₂_baseline(model)[1])
     * (60. * 60. * 24. * 365.25) # (W m^-2 s yr^-1)
 )
 
 FCO₂(model::ClimateModel) = (
-    (5.35 .* log.( (CO₂(model) .+ model.economics.extra_CO₂)./ CO₂(model)[1]))
+    (5.35 .* log.( (CO₂(model) .+ model.physics.r * model.economics.extra_CO₂)./ CO₂(model)[1]) -
+        8.5*model.controls.geoeng)
+    * (60. * 60. * 24. * 365.25)
+)
+
+FCO₂_no_geoeng(model::ClimateModel) = (
+    5.35 .* log.( (CO₂(model) .+ model.physics.r * model.economics.extra_CO₂)./ CO₂(model)[1])
     * (60. * 60. * 24. * 365.25)
 )
 
@@ -74,13 +82,13 @@ FCO₂(model::ClimateModel) = (
 
 δT_no_geoeng(model::ClimateModel) = (
     model.physics.δT_init .+
-    (FCO₂(model) .+ model.physics.κ * 
+    (FCO₂_no_geoeng(model) .+ model.physics.κ * 
         (
             (model.physics.τd * model.physics.B)^(-1) .*
             exp.( - (model.domain .- model.domain[1]) / model.physics.τd ) .*
             cumsum(
                 exp.( (model.domain .- model.domain[1]) / model.physics.τd ) .*
-                FCO₂(model)
+                FCO₂_no_geoeng(model)
                 .* model.dt
             )
         )
@@ -100,7 +108,7 @@ FCO₂(model::ClimateModel) = (
                 )
             )
         ) .* (model.physics.B + model.physics.κ)^-1
-    ) .* (1. .- model.controls.geoeng)
+    )
 )
 
 function discounting(model::ClimateModel)

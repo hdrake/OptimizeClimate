@@ -23,7 +23,7 @@ utility_discount_rate = 0.0 # ρ (relative low value from Stern review)
 
 # Control technology cost scales, as fraction of GWP (cost scale is for full deployment, α=1.)
 mitigate_cost = 0.01*GWP;
-remove_cost = 0.02*GWP;
+remove_cost = 0.05*GWP;
 geoeng_cost = 0.05*GWP;
 adapt_cost = 0.03*GWP;
 
