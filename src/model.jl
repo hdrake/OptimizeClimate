@@ -4,17 +4,18 @@ struct Physics
     CO₂_init::Float64
     δT_init::Float64
     Cd::Float64
-    γ::Float64
-
+    κ::Float64
+    r::Float64
+    
     B::Float64
-    τs::Float64
-    function Physics(ECS, CO₂_init, δT_init, Cd, γ)
+    τd::Float64
+    function Physics(ECS, CO₂_init, δT_init, Cd, κ, r)
         FCO₂_2x = 3.48 # Forcing due to doubling CO2 (Held 2009, page 2421)
         seconds_in_year = 60. * 60. * 24. * 365.25
         
         B = (FCO₂_2x / ECS) * seconds_in_year; # Transient Warming Parameter [K (W m^-2 s yr^-1)^-1]
-        τs = (Cd/B) * (B+γ)/γ
-        return new(ECS, CO₂_init, δT_init, Cd, γ, B, τs)
+        τd = (Cd/B) * (B+κ)/κ
+        return new(ECS, CO₂_init, δT_init, Cd, κ, r, B, τd)
     end
 end
 
