@@ -4,7 +4,7 @@ dt = 10. # years
 t = Array(present_year:dt:2200);
 
 # Physics
-CO₂_init = 415.
+CO₂_init = 460.
 δT_init = 1.1
 ECS = 3.0; # "Best-guess equilibrium climate sensitivity"
 ocean_fraction = 0.71
@@ -13,7 +13,8 @@ H = 4000. * ocean_fraction; # effective depth of deep ocean [m]
 Cp = 4180.0; # specific heat capacity of liquid  water [J kg^-1 K^-1]
 Cd = Cp * ρ * H # upper ocean heat capacity
 τd = 200. # deep ocean relaxation time scale [years] (similar to Gregory 2000, Held 2009)
-γ = Cd / τd
+κ = Cd / τd # 
+r = 0.4 # fraction of emissions remaining after biosphere and ocean uptake
 
 # Economics
 GWP = 100. # global world product (trillion $ / year)
@@ -49,14 +50,22 @@ See also: [`ClimateModel`](@ref), [`baseline_emissions`](@ref)
 Economics(t) = Economics(
     β, utility_discount_rate,
     mitigate_cost, remove_cost, geoeng_cost, adapt_cost,
-    0., 0., 0., 0., # Assumed initial condition of zero control deployments in 2020
+    1. /6., 0., 0., 0., # Initial condition on control deployments at t[1]
     baseline_emissions(t)
 )
+
+Economics0(t) = Economics(
+    β, utility_discount_rate,
+    mitigate_cost, remove_cost, geoeng_cost, adapt_cost,
+    0., 0., 0., 0., # Initial condition on control deployments at t[1]
+    baseline_emissions(t)
+)
+
 Economics() = Economics(t)
+Economics0() = Economics0(t)
 
-
-Physics(ECS) = Physics(ECS::Float64, CO₂_init, δT_init, Cd, γ)
-Physics() = Physics(ECS, CO₂_init, δT_init, Cd, γ)
+Physics(ECS) = Physics(ECS::Float64, CO₂_init, δT_init, Cd, κ, r)
+Physics() = Physics(ECS, CO₂_init, δT_init, Cd, κ, r)
 
 ClimateModel(name::String) = ClimateModel(
     name,
@@ -87,6 +96,5 @@ ClimateModel(;ECS::Float64) = ClimateModel(
     Physics(ECS),
     init_zero_controls(t)
 )
-
 
 ClimateModel() = ClimateModel("default")

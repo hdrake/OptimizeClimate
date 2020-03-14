@@ -1,17 +1,22 @@
 
-f_low(α::Array) = (α ./ (1. .+ α)).^2 # shape of individual cost functions
-f_med(α::Array) = α.^2 # shape of individual cost functions
-f_high(α::Array) = (α ./ (1. .- α)).^2 # shape of individual cost functions
+f(α::Array; p=2.) = α.^p # shape of individual cost functions
 
-function baseline_emissions(t::Array{Float64,1}, q0::Float64, t0::Float64, Δt::Float64)
+# Following https://www.eea.europa.eu/data-and-maps/indicators/atmospheric-greenhouse-gas-concentrations-6/assessment-1
+# Raw data at https://www.iiasa.ac.at/web-apps/tnt/RcpDb/dsd?Action=htmlpage&page=compare
+function baseline_emissions(t::Array{Float64,1}, q0::Float64, t1::Float64, t2::Float64)
+    t0 = t[1]
+    Δt0 = t1 - t0
+    Δt1 = t2 - t1
     q = zeros(size(t))
-    q[t .<= t0] = q0 .* ones(size(t[t .<= t0])); # emissions scenario
-    q[(t .> t0) .& (t .<= (t0+Δt))] .= q0 * (Δt .- (t[(t .> t0) .& (t .<= (t0 + Δt))] .- t0))/Δt
-    q[t .> (t0 + Δt)] .= 0.
+    increase_idx = (t .<= t1)
+    decrease_idx = ((t .> t1) .& (t .<= t2))
+    q[increase_idx] .= q0 * (1 .+ (t[increase_idx] .- t0)/Δt0)
+    q[decrease_idx] .= 2. * q0 * (t2 .- t[decrease_idx])/Δt1
+    q[t .> t2] .= 0.
     return q
 end
 
-baseline_emissions(t::Array{Float64,1}) = baseline_emissions(t::Array{Float64,1}, 10., 2080., 40.)
+baseline_emissions(t::Array{Float64,1}) = baseline_emissions(t::Array{Float64,1}, 15., 2100., 2140.)
 
 effective_emissions(model::ClimateModel) = (
     model.economics.baseline_emissions .* (1. .- model.controls.mitigate) .-
@@ -24,7 +29,7 @@ function CO₂_baseline(model::ClimateModel)
     CO₂_baseline[model.domain .<= model.present_year] = CO₂(model)[model.domain .<= model.present_year]
     CO₂_baseline[model.domain .> model.present_year] = (
         CO₂_baseline[model.domain .== model.present_year] .+
-        cumsum(
+        model.physics.r * cumsum(
             model.economics.baseline_emissions[model.domain .> model.present_year] .*
             model.dt
         )
@@ -34,11 +39,12 @@ function CO₂_baseline(model::ClimateModel)
 end
 
 CO₂(model::ClimateModel) = (
-    model.physics.CO₂_init .+
-    cumsum(model.economics.baseline_emissions .* (1. .- model.controls.mitigate) .*
-        model.dt) .-
-    cumsum(model.economics.baseline_emissions[1] .* model.controls.remove .*
-        model.dt)
+    model.physics.CO₂_init .+ model.physics.r * (
+        cumsum(model.economics.baseline_emissions .* (1. .- model.controls.mitigate) .*
+            model.dt) .-
+        cumsum(model.economics.baseline_emissions[1] .* model.controls.remove .*
+            model.dt)
+    )
 );
 
 FCO₂_baseline(model::ClimateModel) = (
@@ -53,47 +59,47 @@ FCO₂(model::ClimateModel) = (
 
 δT_baseline(model::ClimateModel) = (
     model.physics.δT_init .+
-    (FCO₂_baseline(model) .+ model.physics.γ * 
+    (FCO₂_baseline(model) .+ model.physics.κ * 
         (
-            (model.physics.τs * model.physics.B)^(-1) .*
-            exp.( - model.domain / model.physics.τs ) .*
+            (model.physics.τd * model.physics.B)^(-1) .*
+            exp.( - model.domain / model.physics.τd ) .*
             cumsum(
-                exp.( model.domain / model.physics.τs ) .*
+                exp.( model.domain / model.physics.τd ) .*
                 FCO₂_baseline(model)
                 .* model.dt
             )
         )
-    ) .* (model.physics.B + model.physics.γ)^-1
+    ) .* (model.physics.B + model.physics.κ)^-1
 )
 
 δT_no_geoeng(model::ClimateModel) = (
     model.physics.δT_init .+
-    (FCO₂(model) .+ model.physics.γ * 
+    (FCO₂(model) .+ model.physics.κ * 
         (
-            (model.physics.τs * model.physics.B)^(-1) .*
-            exp.( - (model.domain .- model.domain[1]) / model.physics.τs ) .*
+            (model.physics.τd * model.physics.B)^(-1) .*
+            exp.( - (model.domain .- model.domain[1]) / model.physics.τd ) .*
             cumsum(
-                exp.( (model.domain .- model.domain[1]) / model.physics.τs ) .*
+                exp.( (model.domain .- model.domain[1]) / model.physics.τd ) .*
                 FCO₂(model)
                 .* model.dt
             )
         )
-    ) .* (model.physics.B + model.physics.γ)^-1
+    ) .* (model.physics.B + model.physics.κ)^-1
 )
 
 δT(model::ClimateModel) = ((
         model.physics.δT_init .+
-        (FCO₂(model) .+ model.physics.γ * 
+        (FCO₂(model) .+ model.physics.κ * 
             (
-                (model.physics.τs * model.physics.B)^(-1) .*
-                exp.( - (model.domain .- model.domain[1]) / model.physics.τs ) .*
+                (model.physics.τd * model.physics.B)^(-1) .*
+                exp.( - (model.domain .- model.domain[1]) / model.physics.τd ) .*
                 cumsum(
-                    exp.( (model.domain .- model.domain[1]) / model.physics.τs ) .*
+                    exp.( (model.domain .- model.domain[1]) / model.physics.τd ) .*
                     FCO₂(model)
                     .* model.dt
                 )
             )
-        ) .* (model.physics.B + model.physics.γ)^-1
+        ) .* (model.physics.B + model.physics.κ)^-1
     ) .* (1. .- model.controls.geoeng)
 )
 
@@ -109,8 +115,7 @@ damage_cost_baseline(model::ClimateModel) = (
 )
 
 discounted_damage_cost_baseline(model::ClimateModel) = (
-    model.economics.β .* δT_baseline(model).^2 .*
-    discounting(model)
+    damage_cost_baseline(model) .* discounting(model)
 )
 
 damage_cost(model::ClimateModel) = (
@@ -119,25 +124,18 @@ damage_cost(model::ClimateModel) = (
 )
 
 discounted_damage_cost(model::ClimateModel) = (
-    (1. .- model.controls.adapt) .*
-    model.economics.β .* δT(model).^2 .*
-    discounting(model)
+    damage_cost(model) .* discounting(model)
 )
 
 control_cost(model::ClimateModel) = (
-    model.economics.mitigate_cost .* f_med(model.controls.mitigate) .+
-    model.economics.remove_cost .* f_med(model.controls.remove) .+
-    model.economics.geoeng_cost .* f_med(model.controls.geoeng) .+
-    model.economics.adapt_cost .* f_med(model.controls.adapt)
+    model.economics.mitigate_cost .* f(model.controls.mitigate) .+
+    model.economics.remove_cost .* f(model.controls.remove) .+
+    model.economics.geoeng_cost .* f(model.controls.geoeng) .+
+    model.economics.adapt_cost .* f(model.controls.adapt)
 )
 
 discounted_control_cost(model::ClimateModel) = (
-    (
-        model.economics.mitigate_cost .* f_med(model.controls.mitigate) .+
-        model.economics.remove_cost .* f_med(model.controls.remove) .+
-        model.economics.geoeng_cost .* f_med(model.controls.geoeng) .+
-        model.economics.adapt_cost .* f_med(model.controls.adapt)
-    ) .* discounting(model)
+    control_cost(model) .* discounting(model)
 )
 
 discounted_total_damage_cost(model::ClimateModel) = (
@@ -173,7 +171,7 @@ function extra_ton(model::ClimateModel, year::Float64)
         econ.β, econ.utility_discount_rate,
         econ.mitigate_cost, econ.remove_cost,
         econ.geoeng_cost, econ.adapt_cost,
-        0., 0., 0., 0.,
+        econ.mitigate_init, econ.remove_init, econ.geoeng_init, econ.adapt_init,
         econ.baseline_emissions,
         extra_CO₂
     );

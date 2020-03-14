@@ -110,12 +110,12 @@ function optimize_controls!(
     for i in 1:N-1
         @constraint(
             model_optimizer, cumsum_qMR[i+1] - cumsum_qMR[i] ==
-            (model.dt * (q[i+1] * (1. - M[i+1]) - q[1] * R[i+1]))
+            (model.dt * model.physics.r * (q[i+1] * (1. - M[i+1]) - q[1] * R[i+1]))
         )
     end
     @constraint(
         model_optimizer, cumsum_qMR[1] == 
-        (model.dt * (q[1] * (1. - M[1]) - q[1] * R[1]))
+        (model.dt * model.physics.r * (q[1] * (1. - M[1]) - q[1] * R[1]))
     );
     
     # add temperature kernel as new variable defined by first order finite difference
@@ -125,7 +125,7 @@ function optimize_controls!(
             model_optimizer, cumsum_KFdt[i+1] - cumsum_KFdt[i] ==
             (
                 model.dt *
-                exp( - model.domain[i+1] / model.physics.τs ) *
+                exp( - model.domain[i+1] / model.physics.τd ) *
                 5.35 * log_JuMP(
                     (model.physics.CO₂_init + cumsum_qMR[i+1]) /
                     (model.physics.CO₂_init + cumsum_qMR[1])
@@ -172,11 +172,11 @@ function optimize_controls!(
                             5.35 * log_JuMP(
                                 (model.physics.CO₂_init + cumsum_qMR[i]) /
                                 (model.physics.CO₂_init + cumsum_qMR[1])
-                            ) * (60. * 60. * 24. * 365.25) + model.physics.γ *
-                            (model.physics.τs * model.physics.B)^(-1) *
-                            exp( ( model.domain[i] / model.physics.τs )) *
+                            ) * (60. * 60. * 24. * 365.25) + model.physics.κ *
+                            (model.physics.τd * model.physics.B)^(-1) *
+                            exp( ( model.domain[i] / model.physics.τd )) *
                             cumsum_KFdt[i]
-                        ) * (model.physics.B + model.physics.γ)^-1
+                        ) * (model.physics.B + model.physics.κ)^-1
                     ) * (1. - G[i])
                     )^2 +
                     model.economics.mitigate_cost * f_JuMP(M[i]) +
@@ -211,11 +211,11 @@ function optimize_controls!(
                         5.35 * log_JuMP(
                             (model.physics.CO₂_init + cumsum_qMR[i]) /
                             (model.physics.CO₂_init + cumsum_qMR[1])
-                        ) * (60. * 60. * 24. * 365.25) + model.physics.γ *
-                        (model.physics.τs * model.physics.B)^(-1) *
-                        exp( ( model.domain[i] / model.physics.τs )) *
+                        ) * (60. * 60. * 24. * 365.25) + model.physics.κ *
+                        (model.physics.τd * model.physics.B)^(-1) *
+                        exp( ( model.domain[i] / model.physics.τd )) *
                         cumsum_KFdt[i]
-                    ) * (model.physics.B + model.physics.γ)^-1
+                    ) * (model.physics.B + model.physics.κ)^-1
                 ) * (1. - G[i])
                 )^2 <= (model.economics.β * temp_goal^2)
             )
@@ -228,11 +228,11 @@ function optimize_controls!(
                     5.35 * log_JuMP(
                         (model.physics.CO₂_init + cumsum_qMR[i]) /
                         (model.physics.CO₂_init + cumsum_qMR[1])
-                    ) * (60. * 60. * 24. * 365.25) + model.physics.γ *
-                    (model.physics.τs * model.physics.B)^(-1) *
-                    exp( ( model.domain[i] / model.physics.τs )) *
+                    ) * (60. * 60. * 24. * 365.25) + model.physics.κ *
+                    (model.physics.τd * model.physics.B)^(-1) *
+                    exp( ( model.domain[i] / model.physics.τd )) *
                     cumsum_KFdt[i]
-                ) * (model.physics.B + model.physics.γ)^-1
+                ) * (model.physics.B + model.physics.κ)^-1
             ) * (1. - G[i])
             )^2 <= (model.economics.β * temp_final^2)
         )
@@ -247,11 +247,11 @@ function optimize_controls!(
                             5.35 * log_JuMP(
                                 (model.physics.CO₂_init + cumsum_qMR[i]) /
                                 (model.physics.CO₂_init + cumsum_qMR[1])
-                            ) * (60. * 60. * 24. * 365.25) + model.physics.γ *
-                            (model.physics.τs * model.physics.B)^(-1) *
-                            exp( ( model.domain[i] / model.physics.τs )) *
+                            ) * (60. * 60. * 24. * 365.25) + model.physics.κ *
+                            (model.physics.τd * model.physics.B)^(-1) *
+                            exp( ( model.domain[i] / model.physics.τd )) *
                             cumsum_KFdt[i]
-                        ) * (model.physics.B + model.physics.γ)^-1
+                        ) * (model.physics.B + model.physics.κ)^-1
                     ) * (1. - G[i])
                 )^2 *
                 discounting_JuMP(model.domain[i]) *
@@ -282,11 +282,11 @@ function optimize_controls!(
                             5.35 * log_JuMP(
                                 (model.physics.CO₂_init + cumsum_qMR[i]) /
                                 (model.physics.CO₂_init + cumsum_qMR[1])
-                            ) * (60. * 60. * 24. * 365.25) + model.physics.γ *
-                            (model.physics.τs * model.physics.B)^(-1) *
-                            exp( ( model.domain[i] / model.physics.τs )) *
+                            ) * (60. * 60. * 24. * 365.25) + model.physics.κ *
+                            (model.physics.τd * model.physics.B)^(-1) *
+                            exp( ( model.domain[i] / model.physics.τd )) *
                             cumsum_KFdt[i]
-                        ) * (model.physics.B + model.physics.γ)^-1
+                        ) * (model.physics.B + model.physics.κ)^-1
                     ) * (1. - λ[i])
                 )^2 *
                 discounting_JuMP(model.domain[i]) *
@@ -297,15 +297,14 @@ function optimize_controls!(
         for i in 1:N
             @NLconstraint(model_optimizer,
                 (
-                    model.economics.mitigate_cost * f_med_JuMP(M[i]) +
-                    model.economics.remove_cost * f_med_JuMP(R[i]) +
-                    model.economics.geoeng_cost * f_med_JuMP(G[i]) +
-                    model.economics.adapt_cost * f_med_JuMP(A[i])
+                    model.economics.mitigate_cost * f_JuMP(M[i]) +
+                    model.economics.remove_cost * f_JuMP(R[i]) +
+                    model.economics.geoeng_cost * f_JuMP(G[i]) +
+                    model.economics.adapt_cost * f_JuMP(A[i])
                 ) <= expenditure
             )
         end
     end
-    
     optimize!(model_optimizer)
     
     getfield(model.controls, :mitigate)[domain_idx] = value.(M)[domain_idx]
@@ -339,7 +338,7 @@ function step_forward(model::ClimateModel, Δt::Float64, q0::Float64, t0::Float6
     economics = Economics(
         β, utility_discount_rate,
         mitigate_cost, remove_cost, geoeng_cost, adapt_cost,
-        0., 0., 0., 0.,
+        mitigate_init, remove_init, geoeng_init, adapt_init,
         new_emissions
     )
     model = ClimateModel(
