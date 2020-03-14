@@ -10,8 +10,21 @@ function optimize_controls!(
             "geoeng"=> model.domain[1]+40,
             "adapt"=>model.domain[1]
         ),
-        cost_exponent = 2
+        cost_exponent = 2,
+        print_status = false, print_statistics = false
     )
+    
+    if print_status
+        if print_statistics
+            bool_str = "yes"
+        else
+            bool_str = "no"
+        end
+        print_int = 1
+    else
+        print_int = 0
+        bool_str = "no"
+    end
     
     if temp_final == nothing
         temp_final = temp_goal
@@ -27,8 +40,9 @@ function optimize_controls!(
     
     model_optimizer = Model(optimizer_with_attributes(Ipopt.Optimizer,
         "acceptable_tol" => 1.e-8, "max_iter" => Int64(1e6),
-        "print_frequency_iter" => 1
-        ))#, "print_level" => 0))
+        "print_frequency_iter" => 50,  "print_timing_statistics" => bool_str,
+        "print_level" => print_int
+    ))
 
     f_JuMP(α) = α^cost_exponent
     register(model_optimizer, :f_JuMP, 1, f_JuMP, autodiff=true)

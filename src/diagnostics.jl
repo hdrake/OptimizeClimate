@@ -1,8 +1,11 @@
 
 f(α::Array; p=2.) = α.^p # shape of individual cost functions
 
-# Following https://www.eea.europa.eu/data-and-maps/indicators/atmospheric-greenhouse-gas-concentrations-6/assessment-1
+# Following RCP8.5 CO2e concentrations 
 # Raw data at https://www.iiasa.ac.at/web-apps/tnt/RcpDb/dsd?Action=htmlpage&page=compare
+#
+# See below link for 2020 initial condition:
+# https://www.eea.europa.eu/data-and-maps/indicators/atmospheric-greenhouse-gas-concentrations-6/assessment-1
 function baseline_emissions(t::Array{Float64,1}, q0::Float64, t1::Float64, t2::Float64)
     t0 = t[1]
     Δt0 = t1 - t0
