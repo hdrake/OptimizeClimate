@@ -127,12 +127,12 @@ function optimize_stochastic_controls!(
         for i in 1:N-1
             @constraint(
                 model_optimizer, cumsum_qMR[i+1, j] - cumsum_qMR[i, j] ==
-                (model.dt * r * (q[j][i+1] * (1. - M[i+1]) - q[j][1] * R[i+1]))
+                (model.dt * (model.physics.r * q[j][i+1] * (1. - M[i+1]) - q[j][1] * R[i+1]))
             )
         end
         @constraint(
             model_optimizer, cumsum_qMR[1, j] == 
-            (model.dt * r * (q[j][1] * (1. - M[1]) - q[j][1] * R[1]))
+            (model.dt * (model.physics.r * q[j][1] * (1. - M[1]) - q[j][1] * R[1]))
         );
     
     end
@@ -170,10 +170,10 @@ function optimize_stochastic_controls!(
                 (
                     model.dt *
                     exp( - model.domain[i+1] / model.physics.τd ) *
-                    5.35 * log_JuMP(
+                    (5.35 * log_JuMP(
                         (model.physics.CO₂_init + cumsum_qMR[i+1, j]) /
                         (model.physics.CO₂_init + cumsum_qMR[1, j])
-                    ) * (60. * 60. * 24. * 365.25)
+                    )  - 8.5*G[i]) * (60. * 60. * 24. * 365.25)
                 )
             )
         end
@@ -203,15 +203,16 @@ function optimize_stochastic_controls!(
                 (1 - A[i]) * models[j].economics.β * (
                     (models[j].physics.δT_init + 
                     (
-                        5.35 * log_JuMP(
+                        (5.35 * log_JuMP(
                             (models[j].physics.CO₂_init + cumsum_qMR[i, j]) /
                             (models[j].physics.CO₂_init + cumsum_qMR[1, j])
-                        ) * (60. * 60. * 24. * 365.25) + models[j].physics.κ *
+                        ) - 8.5*G[i]) * (60. * 60. * 24. * 365.25) +
+                        models[j].physics.κ *
                         (models[j].physics.τd * models[j].physics.B)^(-1) *
                         exp( ( models[j].domain[i] / models[j].physics.τd )) *
                         cumsum_KFdt[i, j]
                     ) * (models[j].physics.B + models[j].physics.κ)^-1
-                ) * (1. - G[i])
+                )
                 )^2
             ) for j=1:E) <= (overshoot_prob * E)
         )
