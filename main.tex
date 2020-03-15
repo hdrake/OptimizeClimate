@@ -96,6 +96,13 @@ The greenhouse radiative forcing $F'_{M, R}$ can optionally be partially offset 
     F'_{M, R, G}(t) = F'_{M, R}(t) + F'_{G}(t).
 \end{equation}
 
+\begin{figure}[htb!]
+\noindent\includegraphics[width=1.0\textwidth]{figures/default-temp_carbon_and_temperatures.png}
+\centering
+\caption{}
+\label{fig.temp_and_carbon}
+\end{figure}
+
 \subsection{Temperature response to CO$_{2}$ forcing}
 The evolution of the global-mean near-surface temperature anomaly (relative to the initial time $t_{0} = 2020$) is determined by the two-box linear energy balance model \citep[e.g][]{gregory_vertical_2000, held_probing_2010}:
 \begin{gather}
@@ -131,7 +138,7 @@ is thus driven by the controlled net radiative forcing $F_{M,R,G}$.
 
 \subsection{Climate damages}
 
-Annual climate damages are assumed to be of the quadratic form $D(t) = \beta T(t)^{2}$, such that successive temperature increases are increasingly damaging, based on empirical estimates of damages which range from linear to cubic functions of global-mean temperature \citep{ster}. The default value of the damage parameter $\beta$ is chosen to be roughly similar to the DICE model for low levels of warming \citep{nordhaus2013dice}, resulting in damages of 2\% of global world product at \SI{2}{\celsius}. \textbf{A}daptation to climate change impacts (e.g. building sea walls, installing air conditioning units, planting climate-resilient crops) is parameterized by reducing annual damages by a fraction $A(t) \in [0,1]$, such that the total controlled damages are:
+Annual climate damages are assumed to be of the quadratic form $D(t) = \beta T(t)^{2}$, such that successive temperature increases are increasingly damaging, based on empirical estimates of damages which range from linear to cubic functions of global-mean temperature \citep{stern_economics_2007}. The default value of the damage parameter $\beta$ is chosen to be roughly similar to the DICE model for low levels of warming \citep{nordhaus2013dice}, resulting in damages of 2\% of global world product at \SI{2}{\celsius}. \textbf{A}daptation to climate change impacts (e.g. building sea walls, installing air conditioning units, planting climate-resilient crops) is parameterized by reducing annual damages by a fraction $A(t) \in [0,1]$, such that the total controlled damages are:
 \begin{equation}
     D_{M, R, G, A} = \beta \; (T_{M, R, G}(t))^{2} \; (1-A(t)).
 \end{equation}
@@ -170,7 +177,16 @@ Here, we interpret the cost $\mathcal{C}$ of climate change as the cost of deplo
     = \; & \min \left\{ \sum_{t_{0}}^{t_{f}} \left( \sum_{\alpha \in \mathcal{A}} \mathcal{C}_{\alpha} f(\alpha(t)) + \beta (T_{M, R, G})^{2}(1-A(t)) \right) (1 + \rho)^{-(t-t_{0})} \right\}
 \end{align}
 
+
+
 \subsection{Approach 2: Cost-effectivness of avoiding probabilistic damage thresholds (i.e. Paris Agreement)}\label{sec.paris_goal}
+
+\begin{figure}[htb!]
+\noindent\includegraphics[width=1.0\textwidth]{figures/default-temp_controls_and_damages.png}
+\centering
+\caption{}
+\label{fig.approach2}
+\end{figure}
 
 \subsection{Designing reactive climate policy for an uncertain future}
 
