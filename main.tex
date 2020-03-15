@@ -99,7 +99,7 @@ The greenhouse radiative forcing $F'_{M, R}$ can optionally be partially offset 
 \begin{figure}[htb!]
 \noindent\includegraphics[width=1.0\textwidth]{figures/default-temp_carbon_and_temperatures.png}
 \centering
-\caption{}
+\caption{Baseline (blue) and optimal (orange) a) effective CO$_{2}$ emissions, b) CO$_{2}$ concentrations, and c) temperature anomaly relative to preindustrial from cost-effectiveness analysis (see Section \ref{sec.cost-effectivness}). The red line in c) shows the temperature change that would occur without solar geoengineering while the dashed black line marks the threshold temperature of $\SI{2}{\celsius}$ to be avoided.}
 \label{fig.temp_and_carbon}
 \end{figure}
 
@@ -164,27 +164,34 @@ We use the Interior Point Optimizer (\href{https://github.com/coin-or/Ipopt}{htt
 
 In contrast to conventional Integrated Assessment Models, which follow classic economic theories of optimal economic growth and solve for the maximal welfare based on the discounted utility of consumption, we here completely ignore economic feedbacks and simply aim to minimize the costs– and maximize the benefits– of deploying climate change controls, subject to constraints from policy goals.
 
-In Section \ref{sec.cost_benefit}, we describe a cost-benefit analysis approach which finds the trajectories of control deployments that optimize trade-offs between the costs of deploying climate controls and the benefit of avoiding climate damages due to these controls. The cost-benefit approach depends strongly on the magnitude of the poorly-constrained damage function $D(T)$, which is thought to be under-estimated by conventional bottom-up approaches \citep{ackerman_limitations_2009}. Thus, in Section \ref{sec.paris_goal} we also explore an alternative scenario in which we instead impose an upper bound goal on climate damages (as in the 2015 United Nations Paris Agreement on Climate Change) and find the lowest cost climate control trajectories which still satisfy this constraint.
+In Section \ref{sec.cost_benefit}, we describe a cost-benefit analysis approach which finds the trajectories of control deployments that optimize trade-offs between the costs of deploying climate controls and the benefit of avoiding climate damages due to these controls. The cost-benefit approach depends strongly on the magnitude of the poorly-constrained damage function $D(T)$, which is thought to be under-estimated by conventional bottom-up approaches \citep{ackerman_limitations_2009}. Thus, in Section \ref{sec.cost-effectivness} we also explore an alternative scenario in which we instead impose an upper bound on permissible climate damages, or temperatures (as in the 2015 United Nations Paris Agreement on Climate Change), and find the lowest cost climate control trajectories which still satisfy this constraint.
 
 \subsection{Approach 1: Cost-benefit analysis}\label{sec.cost_benefit}
 
-A common economic assumption is that society discounts future costs and benefits relative to present by a multiplicative factor $(1 + \rho)^{-(t-t_{0})}$, determined by the utility discount rate $\rho$ \citep[e.g. see reviews in][]{broome_discounting_1994, stern_economics_2007}. Ethical justifications for such a non-zero discount rate are controversial and unconvincing \citep{ramsey_mathematical_1928, solow_economics_1974, stern_economics_2007} and so here we set $\rho = 0$ as our default discount rate in the spirit of inter-generational equity\footnote{Following \cite{stern_economics_2007}'s discussion of the discount rate $\rho = \eta \frac{\dot{c}}{c} + \delta$, we argue against the use of a \textit{social discount rate} on ethical terms \citep{ramsey_mathematical_1928, solow_economics_1974}, setting $\eta \frac{\dot{c}}{c}=0$, and argue that the \textit{pure time discount rate}, the time decay rate of the probability that society exists, is small $\delta \approx 0$, such that $\rho \approx 0$. We note that while a discount rate of zero introduces a sensitivity to the length of the time period considered, the conventional use of discount rates results in an even more absurd assertion that future generations are worthless.}. 
+A common economic assumption is that society discounts future costs and benefits relative to present by a multiplicative discount factor $(1 + \rho)^{-(t-t_{0})}$, determined by the utility discount rate $\rho$ \citep[e.g. see reviews in][]{broome_discounting_1994, stern_economics_2007}. Ethical justifications for applying a non-zero discount rate to the mutli-generational timescales of climate change are unconvincing and controversial even among economists \citep{ramsey_mathematical_1928, solow_economics_1974, stern_economics_2007}. Here we choose to set $\rho = 0$ (no discounting) as our default discount rate in the spirit of inter-generational equity\footnote{Following \cite{stern_economics_2007}'s discussion of the discount rate $\rho = \eta \frac{\dot{c}}{c} + \delta$, we argue against the use of a \textit{social discount rate} on ethical terms \citep{ramsey_mathematical_1928, solow_economics_1974}, setting $\eta \frac{\dot{c}}{c}=0$, and argue that the \textit{pure time discount rate}, the time decay rate of the probability that society exists, is small $\delta \approx 0$, such that $\rho \approx 0$. We note that while a discount rate of zero introduces a sensitivity to the length of the time period considered, the conventional use of discount rates results in an even more absurd assertion that future generations are worthless.}. 
 
 Here, we interpret the cost $\mathcal{C}$ of climate change as the cost of deploying climate controls to reduce climate damages while the benefits $\mathcal{B}$ are the avoided climate damages. A straight-forward solution of the cost-benefit problem is thus to minimize the difference between the time-integrated (potentially discounted) costs and benefits:
-\begin{align}
-    &\min \left\{ \sum_{t_{0}}^{t_{f}} 
-    \left(\mathcal{C}_{M, R, G, A} - \mathcal{B}_{M, R, G, A}\right) (1 + \rho)^{-(t-t_{0})} \right\} \\
-    = \; & \min \left\{ \sum_{t_{0}}^{t_{f}} \left( \sum_{\alpha \in \mathcal{A}} \mathcal{C}_{\alpha} f(\alpha(t)) + \beta (T_{M, R, G})^{2}(1-A(t)) \right) (1 + \rho)^{-(t-t_{0})} \right\}
-\end{align}
+\begin{gather}
+    \min \left\{ \sum_{t_{0}}^{t_{f}} 
+    \left(\mathcal{C}_{M, R, G, A} - \mathcal{B}_{M, R, G, A}\right) (1 + \rho)^{-(t-t_{0})} \right\}.
+\end{gather}
+The results of optimizing for net benefits are shown in Figure \ref{fig.approach1}. Early and aggressive emissions mitigation– and to a lesser extent carbon dioxide removal (Fig \ref{fig.approach1}a)– carry net costs of up to 750 billion USD/year relative to the baseline but deliver an order of magnitude more in benefits from 2070 to 2200 (Fig \ref{fig.approach1}b).
+
+\begin{figure}[htb!]
+\noindent\includegraphics[width=1.0\textwidth]{figures/default-benefits_controls_and_benefits.png}
+\centering
+\caption{a) Optimal control deployments in a net benefit-maximizing framework and b) corresponding costs and benefits relative to a no-climate-policy baseline scenario. The total positive area shaded in grey in b) is the maximal time-integrated net benefits produced by the model.}
+\label{fig.approach1}
+\end{figure}
+
+\subsection{Approach 2: Cost-effectivness of avoiding probabilistic damage thresholds (i.e. Paris Agreement)}\label{sec.cost-effectivness}
 
 
-
-\subsection{Approach 2: Cost-effectivness of avoiding probabilistic damage thresholds (i.e. Paris Agreement)}\label{sec.paris_goal}
 
 \begin{figure}[htb!]
 \noindent\includegraphics[width=1.0\textwidth]{figures/default-temp_controls_and_damages.png}
 \centering
-\caption{}
+\caption{a) Optimal control deployments in a net cost-effectiveness framework and b) corresponding costs and damages. The total positive area shaded in red in b) is the minimal time-integrated controls costs produced by the model.}
 \label{fig.approach2}
 \end{figure}
 
