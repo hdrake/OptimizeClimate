@@ -11,9 +11,9 @@ ocean_fraction = 0.71
 H = 4000. * ocean_fraction; # effective depth of deep ocean [m]
 ρ = 1000.; # density of liquid water [kg m^-3]
 Cp = 4180.0; # specific heat capacity of liquid  water [J kg^-1 K^-1]
-Cd = Cp * ρ * H # upper ocean heat capacity
-τd = 200. # deep ocean relaxation time scale [years] (similar to Gregory 2000, Held 2009)
-κ = Cd / τd # 
+Cd = Cp * ρ * H # upper ocean heat capacity [J K^-1 m^-2]
+τs = 200. # deep ocean relaxation time scale [years] (similar to Gregory 2000, Held 2009)
+κ = Cd / τs # 
 r = 0.4 # fraction of emissions remaining after biosphere and ocean uptake
 
 # Economics
