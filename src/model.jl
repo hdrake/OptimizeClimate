@@ -64,10 +64,10 @@ struct Economics
     geoeng_cost::Float64
     adapt_cost::Float64
     
-    mitigate_init::Float64
-    remove_init::Float64
-    geoeng_init::Float64
-    adapt_init::Float64
+    mitigate_init
+    remove_init
+    geoeng_init
+    adapt_init
     
     baseline_emissions::Array{Float64,1}
     extra_CO₂::Array{Float64,1}
@@ -81,10 +81,10 @@ function Economics(β, utility_discount_rate, mitigate_cost, remove_cost, geoeng
         remove_cost::Float64,
         geoeng_cost::Float64,
         adapt_cost::Float64,
-        mitigate_init::Float64,
-        remove_init::Float64,
-        geoeng_init::Float64,
-        adapt_init::Float64,
+        mitigate_init,
+        remove_init,
+        geoeng_init,
+        adapt_init,
         baseline_emissions::Array{Float64,1},
         zeros(size(baseline_emissions))
     )

@@ -2,7 +2,7 @@ function optimize_controls!(
         model::ClimateModel;
         obj_option = "temp", temp_goal = 2., budget=10., expenditure = 0.5,
         max_deployment = Dict("mitigate"=>1., "remove"=>1., "geoeng"=>1., "adapt"=>1.),
-        maxslope = Dict("mitigate"=>1. /20., "remove"=>1. /40., "geoeng"=>1. /20., "adapt"=>1. /20.),
+        maxslope = Dict("mitigate"=>1. /20., "remove"=>1. /40., "geoeng"=>1. /20., "adapt"=>0.),
         temp_final = nothing,
         start_deployment = Dict(
             "mitigate"=>model.domain[1],
@@ -76,7 +76,7 @@ function optimize_controls!(
     # constraints on control variables
     @variables(model_optimizer, begin
             0. <= M[1:N] <= max_deployment["mitigate"]  # emissions reductions
-            -max_deployment["remove"] <= R[1:N] <= max_deployment["remove"]  # negative emissions
+            0. <= R[1:N] <= max_deployment["remove"]  # negative emissions
             0. <= G[1:N] <= max_deployment["geoeng"]  # geoengineering
             0. <= A[1:N] <= max_deployment["adapt"]  # adapt
     end)
@@ -109,9 +109,14 @@ function optimize_controls!(
     )
     
     for (key, control) in control_vars
-        fix(control_vars[key][1], control_inits[key]; force = true)
-
-        for idx in 2:N
+        if control_inits[key] != nothing
+            fix(control_vars[key][1], control_inits[key]; force = true)
+            Nstart = 2
+        else
+            Nstart = 1
+        end
+        
+        for idx in Nstart:N
             if idx <= length(model.domain[.~domain_idx])
                 fix(control_vars[key][idx], controls[key][idx]; force = true)
             else
@@ -120,7 +125,7 @@ function optimize_controls!(
                 end
             end
         end
-    end
+    end                
 
     # add integral function as a new variable defined by first order finite differences
     @variable(model_optimizer, cumsum_qMR[1:N]);
@@ -338,7 +343,7 @@ function optimize_controls!(
     return model_optimizer
 end
 
-function step_forward(model::ClimateModel, Δt::Float64, q0::Float64, t0::Float64, Δt0::Float64)
+function step_forward(model::ClimateModel, Δt::Float64, q0::Float64, t1::Float64, t2::Float64)
 
     present_year = deepcopy(model.present_year) + Δt
     present_idx = deepcopy(argmin(abs.(model.domain .- present_year)))
@@ -356,13 +361,14 @@ function step_forward(model::ClimateModel, Δt::Float64, q0::Float64, t0::Float6
         deepcopy(model.economics.baseline_emissions)[model.domain .< model.present_year]
     )
     new_emissions[model.domain .>= model.present_year] = (
-        deepcopy(baseline_emissions(model.domain, q0, t0, Δt0))[model.domain .>= model.present_year]
+        deepcopy(baseline_emissions(model.domain, q0, t1, t2))[model.domain .>= model.present_year]
     )
     
+    econ = model.economics
     economics = Economics(
-        β, utility_discount_rate,
-        mitigate_cost, remove_cost, geoeng_cost, adapt_cost,
-        mitigate_init, remove_init, geoeng_init, adapt_init,
+        econ.β, econ.utility_discount_rate,
+        econ.mitigate_cost, econ.remove_cost, econ.geoeng_cost, econ.adapt_cost,
+        econ.mitigate_init, econ.remove_init, econ.geoeng_init, econ.adapt_init,
         new_emissions
     )
     model = ClimateModel(
@@ -371,5 +377,5 @@ function step_forward(model::ClimateModel, Δt::Float64, q0::Float64, t0::Float6
     return model
 end
 
-step_forward(model::ClimateModel, Δt::Float64, q0::Float64) = step_forward(model::ClimateModel, Δt::Float64, q0::Float64, 2080., 40.)
-step_forward(model::ClimateModel, Δt::Float64) = step_forward(model::ClimateModel, Δt::Float64, 5., 2080., 40.)
+step_forward(model::ClimateModel, Δt::Float64, q0::Float64) = step_forward(model::ClimateModel, Δt::Float64, q0::Float64, 2100., 2140.)
+step_forward(model::ClimateModel, Δt::Float64) = step_forward(model::ClimateModel, Δt::Float64, 15., 2100., 2140.)

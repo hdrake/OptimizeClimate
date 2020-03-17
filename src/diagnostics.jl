@@ -18,10 +18,9 @@ function baseline_emissions(t::Array{Float64,1}, q0::Float64, t1::Float64, t2::F
     q[t .> t2] .= 0.
     return q
 end
-
 baseline_emissions(t::Array{Float64,1}) = baseline_emissions(t::Array{Float64,1}, 15., 2100., 2140.)
 
-effective_baseline_emissions(model::ClimateModel) = model.physics.r * baseline_emissions(model.domain)
+effective_baseline_emissions(model::ClimateModel) = model.physics.r * model.economics.baseline_emissions
 
 effective_emissions(model::ClimateModel) = (
     model.physics.r * model.economics.baseline_emissions .* (1. .- model.controls.mitigate) .-

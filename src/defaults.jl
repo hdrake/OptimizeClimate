@@ -50,14 +50,14 @@ See also: [`ClimateModel`](@ref), [`baseline_emissions`](@ref)
 Economics(t) = Economics(
     β, utility_discount_rate,
     mitigate_cost, remove_cost, geoeng_cost, adapt_cost,
-    1. /6., 0., 0., 0., # Initial condition on control deployments at t[1]
+    1. /6., 0., 0., nothing, # Initial condition on control deployments at t[1]
     baseline_emissions(t)
 )
 
 Economics0(t) = Economics(
     β, utility_discount_rate,
     mitigate_cost, remove_cost, geoeng_cost, adapt_cost,
-    0., 0., 0., 0., # Initial condition on control deployments at t[1]
+    0., 0., 0., nothing, # Initial condition on control deployments at t[1]
     baseline_emissions(t)
 )
 
