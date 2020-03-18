@@ -65,7 +65,7 @@ function plot_controls(model::ClimateModel)
     if model.present_year != model.domain[1]
         plot([model.present_year, model.present_year], [0., 1.], "r--")
     end
-    ylabel(L"fraction of control technology deployed")
+    ylabel("fraction of control technology deployed")
     xlabel("year")
     xlim(model.domain[1],model.domain[end])
     ylim([0,1])
@@ -73,12 +73,18 @@ function plot_controls(model::ClimateModel)
 end
 
 function plot_benefits(model::ClimateModel)
+    domain_idx = (model.domain .> model.present_year)
     benefits = (damage_cost_baseline(model) - damage_cost(model))
-    fill_between(model.domain, 0 .*ones(size(model.domain)), (benefits - control_cost(model)) .* discounting(model), facecolor="grey", alpha=0.2)
-    plot(model.domain, 0 .*ones(size(model.domain)), "C0--", alpha=0.5, label="net benefits (no-policy baseline)")
-    plot(model.domain, (benefits - control_cost(model)) .* discounting(model), color="k", label="net benefits (benefits - costs)")
-    plot(model.domain, benefits .* discounting(model), color="C1", label="benefits (of avoided damages)")
-    plot(model.domain, - control_cost(model) .* discounting(model), color="C3", label=L"$-$ costs (of climate controls)")
+    fill_between(
+        model.domain[domain_idx],
+        0 .*ones(size(model.domain))[domain_idx],
+        ((benefits - control_cost(model)) .* discounting(model))[domain_idx],
+        facecolor="grey", alpha=0.2
+    )
+    plot(model.domain[domain_idx], 0 .*ones(size(model.domain))[domain_idx], "C0--", alpha=0.5, label="net benefits (no-policy baseline)")
+    plot(model.domain[domain_idx], ((benefits - control_cost(model)) .* discounting(model))[domain_idx], color="k", label="net benefits (benefits - costs)")
+    plot(model.domain[domain_idx], (benefits .* discounting(model))[domain_idx], color="C1", label="benefits (of avoided damages)")
+    plot(model.domain[domain_idx], (- control_cost(model) .* discounting(model))[domain_idx], color="C3", label=L"$-$ costs (of climate controls)")
     ylabel(L"costs and benefits (10$^{12}$ \$ / year)")
     xlabel("year")
     xlim(model.domain[1],model.domain[end])
@@ -87,16 +93,25 @@ function plot_benefits(model::ClimateModel)
 end
         
 function plot_damages(model)
-    fill_between(model.domain, 0 .*ones(size(model.domain)), control_cost(model) .* discounting(model), facecolor="C3", alpha=0.2)
-    plot(model.domain, model.economics.β*(2.0^2).*ones(size(model.domain)),"k--", alpha=0.5, label=L"damage threshold at 2$^{\circ}$ C with $A=0$")
-    plot(model.domain, damage_cost_baseline(model) .* discounting(model), color="C0", label="uncontrolled damages")
-    plot(model.domain, net_cost(model) .* discounting(model), color="k", label="net costs (controlled damages + controls)")
-    plot(model.domain, damage_cost(model) .* discounting(model), color="C1", label="controlled damages")
-    plot(model.domain, control_cost(model) .* discounting(model), color="C3", label="cost of controls")
+    domain_idx = (model.domain .> model.present_year)
+    fill_between(
+        model.domain[domain_idx],
+        0 .*ones(size(model.domain))[domain_idx],
+        (control_cost(model) .* discounting(model))[domain_idx], facecolor="C3", alpha=0.2
+    )
+    plot(
+        model.domain[domain_idx],
+        (model.economics.β*(2.0^2).*ones(size(model.domain)))[domain_idx],
+        "k--", alpha=0.5, label=L"damage threshold at 2$^{\circ}$ C with $A=0$"
+    )
+    plot(model.domain[domain_idx], (damage_cost_baseline(model) .* discounting(model))[domain_idx], color="C0", label="uncontrolled damages")
+    plot(model.domain[domain_idx], (net_cost(model) .* discounting(model))[domain_idx], color="k", label="net costs (controlled damages + controls)")
+    plot(model.domain[domain_idx], (damage_cost(model) .* discounting(model))[domain_idx], color="C1", label="controlled damages")
+    plot(model.domain[domain_idx], (control_cost(model) .* discounting(model))[domain_idx], color="C3", label="cost of controls")
     ylabel(L"discounted costs (10$^{12}$ \$ / year)")
     xlabel("year")
     xlim(model.domain[1],model.domain[end])
-    ylim([0., maximum(damage_cost_baseline(model) .* discounting(model)) * 1.25])
+    ylim([0., maximum((damage_cost_baseline(model) .* discounting(model))[domain_idx]) * 1.25])
     grid(true)
     title("costs of avoiding a damage threshold")
 end

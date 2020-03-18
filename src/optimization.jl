@@ -58,7 +58,7 @@ function optimize_controls!(
     register(model_optimizer, :log_JuMP, 1, log_JuMP, autodiff=true)
 
     function discounting_JuMP(t)
-        if t < model.present_year
+        if t <= model.present_year
             return 0.
         else
             return (
@@ -94,7 +94,7 @@ function optimize_controls!(
         "adapt" => model.controls.adapt
     )
     
-    domain_idx = (model.domain .>= model.present_year)
+    domain_idx = (model.domain .> model.present_year) # don't update present
     
     M₀ = model.economics.mitigate_init
     R₀ = model.economics.remove_init
@@ -161,23 +161,25 @@ function optimize_controls!(
     );
 
     # Add constraint of rate of changes
+    present_idx = findmin(abs.(model.domain .- model.present_year))[2]
     if typeof(maxslope) == Float64
         @variables(model_optimizer, begin
-                -maxslope <= dMdt[1:N-1] <= maxslope
-                -maxslope <= dRdt[1:N-1] <= maxslope
-                -maxslope <= dGdt[1:N-1] <= maxslope
-                -maxslope <= dAdt[1:N-1] <= maxslope
+                -maxslope <= dMdt[present_idx+1:N-1] <= maxslope
+                -maxslope <= dRdt[present_idx+1:N-1] <= maxslope
+                -maxslope <= dGdt[present_idx+1:N-1] <= maxslope
+                -maxslope <= dAdt[present_idx+1:N-1] <= maxslope
         end);
+
     elseif typeof(maxslope) == Dict{String,Float64}
         @variables(model_optimizer, begin
-                -maxslope["mitigate"] <= dMdt[1:N-1] <= maxslope["mitigate"]
-                -maxslope["remove"] <= dRdt[1:N-1] <= maxslope["remove"]
-                -maxslope["geoeng"] <= dGdt[1:N-1] <= maxslope["geoeng"]
-                -maxslope["adapt"] <= dAdt[1:N-1] <= maxslope["adapt"]
+                -maxslope["mitigate"] <= dMdt[present_idx+1:N-1] <= maxslope["mitigate"]
+                -maxslope["remove"] <= dRdt[present_idx+1:N-1] <= maxslope["remove"]
+                -maxslope["geoeng"] <= dGdt[present_idx+1:N-1] <= maxslope["geoeng"]
+                -maxslope["adapt"] <= dAdt[present_idx+1:N-1] <= maxslope["adapt"]
         end);
     end
 
-    for i in 1:N-1
+    for i in present_idx+1:N-1
         @constraint(model_optimizer, dMdt[i] == (M[i+1] - M[i]) / model.dt)
         @constraint(model_optimizer, dRdt[i] == (R[i+1] - R[i]) / model.dt)
         @constraint(model_optimizer, dGdt[i] == (G[i+1] - G[i]) / model.dt)

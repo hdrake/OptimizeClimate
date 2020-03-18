@@ -1,6 +1,6 @@
 # Model domain
 present_year = 2020.
-dt = 10. # years
+dt = 5. # years
 t = Array(present_year:dt:2200);
 
 # Physics
