@@ -94,7 +94,10 @@ function optimize_controls!(
         "adapt" => model.controls.adapt
     )
     
-    domain_idx = (model.domain .> model.present_year) # don't update present
+    domain_idx = (model.domain .> model.present_year) # don't update past or present
+    if model.domain[1] == model.present_year
+        domain_idx = (model.domain .>= model.present_year) # unless present is also first timestep
+    end
     
     M₀ = model.economics.mitigate_init
     R₀ = model.economics.remove_init
@@ -125,7 +128,7 @@ function optimize_controls!(
                 end
             end
         end
-    end                
+    end
 
     # add integral function as a new variable defined by first order finite differences
     @variable(model_optimizer, cumsum_qMR[1:N]);
@@ -162,6 +165,9 @@ function optimize_controls!(
 
     # Add constraint of rate of changes
     present_idx = findmin(abs.(model.domain .- model.present_year))[2]
+    if present_idx == 1
+        present_idx = 0
+    end
     if typeof(maxslope) == Float64
         @variables(model_optimizer, begin
                 -maxslope <= dMdt[present_idx+1:N-1] <= maxslope
@@ -344,40 +350,3 @@ function optimize_controls!(
     
     return model_optimizer
 end
-
-function step_forward(model::ClimateModel, Δt::Float64, q0::Float64, t1::Float64, t2::Float64)
-
-    present_year = deepcopy(model.present_year) + Δt
-    present_idx = deepcopy(argmin(abs.(model.domain .- present_year)))
-    name = string(Int64(round(present_year)));
-    
-    controls = Controls(
-        deepcopy(model.controls.mitigate),
-        deepcopy(model.controls.remove),
-        deepcopy(model.controls.geoeng),
-        deepcopy(model.controls.adapt)
-    )
-    
-    new_emissions = zeros(size(model.domain))
-    new_emissions[model.domain .< model.present_year] = (
-        deepcopy(model.economics.baseline_emissions)[model.domain .< model.present_year]
-    )
-    new_emissions[model.domain .>= model.present_year] = (
-        deepcopy(baseline_emissions(model.domain, q0, t1, t2))[model.domain .>= model.present_year]
-    )
-    
-    econ = model.economics
-    economics = Economics(
-        econ.β, econ.utility_discount_rate,
-        econ.mitigate_cost, econ.remove_cost, econ.geoeng_cost, econ.adapt_cost,
-        econ.mitigate_init, econ.remove_init, econ.geoeng_init, econ.adapt_init,
-        new_emissions
-    )
-    model = ClimateModel(
-        name, model.domain, model.dt, present_year, economics, model.physics, controls,
-    );
-    return model
-end
-
-step_forward(model::ClimateModel, Δt::Float64, q0::Float64) = step_forward(model::ClimateModel, Δt::Float64, q0::Float64, 2100., 2140.)
-step_forward(model::ClimateModel, Δt::Float64) = step_forward(model::ClimateModel, Δt::Float64, 15., 2100., 2140.)

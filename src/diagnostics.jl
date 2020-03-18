@@ -168,6 +168,10 @@ discounted_total_cost(model::ClimateModel) = (
     sum(net_cost(model) .* discounting(model)  .* model.dt)
 )
 
+mAtmos = 5.e18 # kg
+tCO2_to_ppm(tCO2) = tCO2 / (mAtmos/1.e3) * 1.e6 
+GtCO2_to_ppm(GtCO2) = GtCO2 * (1.e9) / (mAtmos/1.e3) * 1.e6
+
 function extra_ton(model::ClimateModel, year::Float64)
     
     econ = model.economics
@@ -175,7 +179,7 @@ function extra_ton(model::ClimateModel, year::Float64)
     year_idx = argmin(abs.(model.domain .- year))
     
     extra_CO₂ = zeros(size(model.domain))
-    extra_CO₂[year_idx:end] .= 1. /(1.25e10)
+    extra_CO₂[year_idx:end] .= tCO2_to_ppm(1.)
     
     new_economics = Economics(
         econ.β, econ.utility_discount_rate,

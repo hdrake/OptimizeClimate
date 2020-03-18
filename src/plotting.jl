@@ -3,6 +3,19 @@ rcParams["lines.linewidth"] = 3 # Change linewidth
 
 function add_label(s; xy=(0, 1.03), fontsize=12)
     annotate(s=s,xy=xy,xycoords="axes fraction",fontsize=fontsize)
+    return
+end
+
+function fill_past(model, ylims)
+    domain_idx = (model.domain .> model.present_year)
+    fill_between(
+        model.domain[.~domain_idx],
+        ones(size(model.domain[.~domain_idx])) * ylims[1] * 2.,
+        ones(size(model.domain[.~domain_idx])) * ylims[2] * 2.,
+        facecolor="b", alpha=0.1
+    )
+    ylim(ylims)
+    return
 end
 
 function plot_emissions(model::ClimateModel)
@@ -10,33 +23,27 @@ function plot_emissions(model::ClimateModel)
     plot(model.domain, zeros(size(model.domain)), "k--", alpha=0.5)
     plot(model.domain, effective_baseline_emissions(model), color="C0", label=L"$rq$ (no-policy baseline)")
     plot(model.domain, effective_emissions(model), color="C1", label=L"$rq(1-M) - q_{0}R$ (controlled)")
-    if model.present_year != model.domain[1]
-        plot(
-            [model.present_year, model.present_year],
-            [-maximum(effective_baseline_emissions(model)) * 1.1,
-             maximum(effective_baseline_emissions(model)) * 1.1],
-            "r--"
-        )
-    end
+    ylimit = maximum(effective_baseline_emissions(model)) * 1.1
+    ylims = [-ylimit, ylimit]
     ylabel(L"effective CO$_{2e}$ emissions (ppm / yr)")
     xlim(model.domain[1],model.domain[end])
-    ylim(-maximum(effective_baseline_emissions(model)) * 1.1, maximum(effective_baseline_emissions(model)) * 1.1)
     xlabel("year")
+    fill_past(model, ylims)
     grid(true)
+    return
 end
 
 function plot_concentrations(model::ClimateModel)
     title("concentrations")
     plot(model.domain, CO₂_baseline(model), color="C0", label=L"$c$ (no-policy baseline)")
     plot(model.domain, CO₂(model), color="C1", label=L"$c_{M,R}$ (controlled)")
-    if model.present_year != model.domain[1]
-        plot([model.present_year, model.present_year], [0., maximum(CO₂_baseline(model))*1.05], "r--")
-    end
+    ylims = [0., maximum(CO₂_baseline(model))*1.05]
+    fill_past(model, ylims)
     ylabel(L"CO$_{2e}$ concentration (ppm)")
     xlabel("year")
     xlim(model.domain[1],model.domain[end])
-    ylim([0., maximum(CO₂_baseline(model))*1.05])
     grid(true)
+    return
 end
 
 function plot_temperatures(model::ClimateModel)
@@ -45,15 +52,13 @@ function plot_temperatures(model::ClimateModel)
     plot(model.domain,δT_baseline(model), color="C0", label=L"$T$ (no-policy baseline)")
     plot(model.domain,δT_no_geoeng(model), color="C3", label=L"$T_{M,R}$ (controlled with $G=0$)")
     plot(model.domain,δT(model), color="C1", label=L"$T_{M,R,G}$ (controlled)")
-    if model.present_year != model.domain[1]
-        plot([model.present_year, model.present_year], [0., maximum(δT_baseline(model)) * 1.05], "r--")
-    end
+    ylims = [0., maximum(δT_baseline(model)) * 1.05]
+    fill_past(model, ylims)
     ylabel(L"temperature anomaly ($^{\circ}$C)")
     xlabel("year")
     xlim(model.domain[1],model.domain[end])
-    ylim([0., maximum(δT_baseline(model)) * 1.05])
     grid(true)
-    
+    return
 end
     
 function plot_controls(model::ClimateModel)
@@ -62,14 +67,13 @@ function plot_controls(model::ClimateModel)
     plot(model.domain, model.controls.remove, color="C1", label=L"$R$ (carbon dioxide removal)")
     plot(model.domain, model.controls.adapt, color="C2", label=L"$A$ (adaptation)")
     plot(model.domain, model.controls.geoeng, color="C3", label=L"$G$ (solar geoengineering)")
-    if model.present_year != model.domain[1]
-        plot([model.present_year, model.present_year], [0., 1.], "r--")
-    end
+    ylims = [0., 1.]
+    fill_past(model, ylims)
     ylabel("fraction of control technology deployed")
     xlabel("year")
     xlim(model.domain[1],model.domain[end])
-    ylim([0,1])
     grid(true)
+    return
 end
 
 function plot_benefits(model::ClimateModel)
@@ -90,6 +94,7 @@ function plot_benefits(model::ClimateModel)
     xlim(model.domain[1],model.domain[end])
     grid(true)
     title("cost-benefit analysis")
+    return
 end
         
 function plot_damages(model)
@@ -114,12 +119,14 @@ function plot_damages(model)
     ylim([0., maximum((damage_cost_baseline(model) .* discounting(model))[domain_idx]) * 1.25])
     grid(true)
     title("costs of avoiding a damage threshold")
+    return
 end
         
 function plot_state(model::ClimateModel; new_figure=true, plot_legends=true)
     if new_figure
         figure(figsize=(14,8))
     end
+    
     
     subplot(2,3,1)
     plot_emissions(model)
@@ -153,18 +160,21 @@ function plot_state(model::ClimateModel; new_figure=true, plot_legends=true)
     end
     tight_layout()
 
+    return
 end
 
 function plot_ensemble_diagnostic(ensemble::Dict{String, ClimateModel}, symbols::Array{Symbol,1}, domain::Array{Float64,1}, color = "C0", label = nothing)
     first, median, ninth = ensemble_state_statistics(ensemble, symbols, domain)
     fill_between(domain, first, ninth, facecolor=color, alpha=0.4)
     plot(domain, median, "-", color=color, alpha=1.0, label=label)
+    return
 end
 
 function plot_ensemble_statistics(ensemble::Dict{String, ClimateModel}, diagnostic::Function, domain::Array{Float64,1}, color::String, label)
     first, median, ninth = ensemble_diagnostic_statistics(ensemble, diagnostic, domain)
     fill_between(domain, first, ninth, facecolor=color, alpha=0.3)
     plot(domain, median, "-", color=color, alpha=1.0, label=label)
+    return
 end
 
 function plot_ensemble(ensemble::Dict{String, ClimateModel})
@@ -289,5 +299,6 @@ function plot_ensemble(ensemble::Dict{String, ClimateModel})
     annotate(s="d)",xy=(0,1.02),xycoords="axes fraction",fontsize=12)
     
     tight_layout()
+    return
 end
 
