@@ -38,7 +38,7 @@ function add_emissions_bump(model::ClimateModel, Δt::Float64, Δq::Float64)
     
     econ = model.economics
     economics = Economics(
-        econ.β, econ.utility_discount_rate,
+        econ.GWP, econ.β, econ.utility_discount_rate,
         econ.mitigate_cost, econ.remove_cost, econ.geoeng_cost, econ.adapt_cost,
         econ.mitigate_init, econ.remove_init, econ.geoeng_init, econ.adapt_init,
         new_emissions

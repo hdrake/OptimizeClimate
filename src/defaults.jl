@@ -2,30 +2,32 @@
 present_year = 2020.
 dt = 5. # years
 t = Array(present_year:dt:2200);
+sec_per_year = (365. * 24. * 60. * 60.)
 
-# Physics
+## Physics
+
+# Two-layer EBM (Gregory 2000) parameters from Geoffroy 2013
+B = 1.13 * sec_per_year; # Feedback parameter [J yr^-1 m^-2 K^-1]
+Cd = 106 * sec_per_year; # Deep ocean heat capacity [J m^-2 K^-1]
+κ = 0.73 * sec_per_year; # Heat exchange coefficient [J yr^-1 m^2 K^-1]
+δT_init = 1.1 # Berkeley Earth Surface Temperature (Rohde 2013)
+
+# Carbon model
 CO₂_init = 460.
-δT_init = 1.1
-ECS = 3.0; # "Best-guess equilibrium climate sensitivity"
-ocean_fraction = 0.71
-H = 4000. * ocean_fraction; # effective depth of deep ocean [m]
-ρ = 1000.; # density of liquid water [kg m^-3]
-Cp = 4180.0; # specific heat capacity of liquid  water [J kg^-1 K^-1]
-Cd = Cp * ρ * H # upper ocean heat capacity
-τd = 200. # deep ocean relaxation time scale [years] (similar to Gregory 2000, Held 2009)
-κ = Cd / τd # 
-r = 0.4 # fraction of emissions remaining after biosphere and ocean uptake
+r = 0.5 # fraction of emissions remaining after biosphere and ocean uptake (Solomon 2009)
 
 # Economics
-GWP = 100. # global world product (trillion $ / year)
-β = 0.02*GWP/(3.0)^2 # damages (trillion USD / year / celsius^2)
-utility_discount_rate = 0.0 # ρ (relative low value from Stern review)
+GWP0 = 100. # global world product (trillion $ / year)
+GWP = GWP0 * exp.((t .- t[1]) / 50.)
+
+β = 0.02/(3.0)^2 # damages (%GWP / celsius^2)
+utility_discount_rate = 0.0
 
 # Control technology cost scales, as fraction of GWP (cost scale is for full deployment, α=1.)
-mitigate_cost = 0.01*GWP;
-remove_cost = 0.05*GWP;
-geoeng_cost = 0.05*GWP;
-adapt_cost = 0.03*GWP;
+mitigate_cost = 0.01*GWP0; # [10^12$ yr^-1] 
+remove_cost = 0.05*GWP0; # [10^12$ yr^-1] # Estimate cost from Fuss 2018 (see synthesis Figure 14)
+geoeng_cost = 2 * β * (6.0^2); # [%GWP]
+adapt_cost = 0.03*GWP0; # [10^12$ yr^-1]
 
 """
     Economics()
@@ -48,14 +50,14 @@ from 2020 to 2080 and linearly decreasing from 10 ppm / year in 2080 to 0 ppm / 
 See also: [`ClimateModel`](@ref), [`baseline_emissions`](@ref)
 """
 Economics(t) = Economics(
-    β, utility_discount_rate,
+    GWP, β, utility_discount_rate,
     mitigate_cost, remove_cost, geoeng_cost, adapt_cost,
     1. /6., 0., 0., nothing, # Initial condition on control deployments at t[1]
     baseline_emissions(t)
 )
 
 Economics0(t) = Economics(
-    β, utility_discount_rate,
+    GWP, β, utility_discount_rate,
     mitigate_cost, remove_cost, geoeng_cost, adapt_cost,
     0., 0., 0., nothing, # Initial condition on control deployments at t[1]
     baseline_emissions(t)
@@ -64,8 +66,7 @@ Economics0(t) = Economics(
 Economics() = Economics(t)
 Economics0() = Economics0(t)
 
-Physics(ECS) = Physics(ECS::Float64, CO₂_init, δT_init, Cd, κ, r)
-Physics() = Physics(ECS, CO₂_init, δT_init, Cd, κ, r)
+Physics() = Physics(CO₂_init, δT_init, B, Cd, κ, r)
 
 ClimateModel(name::String) = ClimateModel(
     name,
@@ -84,16 +85,6 @@ ClimateModel(;t::Array{Float64,1}, dt::Float64) = ClimateModel(
     present_year,
     Economics(t),
     Physics(),
-    init_zero_controls(t)
-)
-
-ClimateModel(;ECS::Float64) = ClimateModel(
-    "default",
-    t,
-    dt,
-    present_year,
-    Economics(t),
-    Physics(ECS),
     init_zero_controls(t)
 )
 

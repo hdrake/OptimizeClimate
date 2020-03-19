@@ -1,21 +1,21 @@
 
 struct Physics
-    ECS::Float64
     CO₂_init::Float64
     δT_init::Float64
+    B::Float64
     Cd::Float64
     κ::Float64
     r::Float64
     
-    B::Float64
+    ECS::Float64
     τd::Float64
-    function Physics(ECS, CO₂_init, δT_init, Cd, κ, r)
-        FCO₂_2x = 3.48 # Forcing due to doubling CO2 (Held 2009, page 2421)
-        seconds_in_year = 60. * 60. * 24. * 365.25
+    function Physics(CO₂_init, δT_init, B, Cd, κ, r)
+        FCO₂_2x = 6.9/2. # Forcing due to doubling CO2 (Geoffrey 2013)
+        sec_per_year = 60. * 60. * 24. * 365.25
         
-        B = (FCO₂_2x / ECS) * seconds_in_year; # Transient Warming Parameter [K (W m^-2 s yr^-1)^-1]
-        τd = (Cd/B) * (B+κ)/κ
-        return new(ECS, CO₂_init, δT_init, Cd, κ, r, B, τd)
+        ECS = (FCO₂_2x*sec_per_year)/B # [degC]
+        τd = (Cd/B) * (B+κ)/κ # [yr]
+        return new(CO₂_init, δT_init, B, Cd, κ, r, ECS, τd)
     end
 end
 
@@ -56,6 +56,7 @@ See also: [`ClimateModel`](@ref), [`baseline_emissions`](@ref).
 
 """
 struct Economics
+    GWP::Array{Float64,1}
     β::Float64
     utility_discount_rate::Float64
     
@@ -73,8 +74,9 @@ struct Economics
     extra_CO₂::Array{Float64,1}
 end
 
-function Economics(β, utility_discount_rate, mitigate_cost, remove_cost, geoeng_cost, adapt_cost, mitigate_init, remove_init, geoeng_init, adapt_init, baseline_emissions)
+function Economics(GWP, β, utility_discount_rate, mitigate_cost, remove_cost, geoeng_cost, adapt_cost, mitigate_init, remove_init, geoeng_init, adapt_init, baseline_emissions)
     return Economics(
+        GWP::Array{Float64,1},
         β::Float64,
         utility_discount_rate::Float64,
         mitigate_cost::Float64,
