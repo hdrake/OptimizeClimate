@@ -270,6 +270,7 @@ function optimize_controls!(
         i=N
         @NLconstraint(model_optimizer,
             (1 - A[i]) * model.economics.β *
+            model.economics.GWP[i] *
             ((model.physics.δT_init + 
                 (
                     (5.35 * log_JuMP(

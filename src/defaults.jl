@@ -18,7 +18,7 @@ r = 0.5 # fraction of emissions remaining after biosphere and ocean uptake (Solo
 
 # Economics
 GWP0 = 100. # global world product (trillion $ / year)
-GWP = GWP0 * exp.((t .- t[1]) / 50.)
+GWP(t) = GWP0 * exp.((t .- t[1]) / 50.)
 
 β = 0.02/(3.0)^2 # damages (%GWP / celsius^2)
 utility_discount_rate = 0.0
@@ -50,14 +50,14 @@ from 2020 to 2080 and linearly decreasing from 10 ppm / year in 2080 to 0 ppm / 
 See also: [`ClimateModel`](@ref), [`baseline_emissions`](@ref)
 """
 Economics(t) = Economics(
-    GWP, β, utility_discount_rate,
+    GWP(t), β, utility_discount_rate,
     mitigate_cost, remove_cost, geoeng_cost, adapt_cost,
     1. /6., 0., 0., nothing, # Initial condition on control deployments at t[1]
     baseline_emissions(t)
 )
 
 Economics0(t) = Economics(
-    GWP, β, utility_discount_rate,
+    GWP(t), β, utility_discount_rate,
     mitigate_cost, remove_cost, geoeng_cost, adapt_cost,
     0., 0., 0., nothing, # Initial condition on control deployments at t[1]
     baseline_emissions(t)
