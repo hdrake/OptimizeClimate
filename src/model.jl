@@ -1,21 +1,22 @@
 
-struct Physics
-    ECS::Float64
+mutable struct Physics
     CO₂_init::Float64
     δT_init::Float64
+    a::Float64
+    B::Float64
     Cd::Float64
     κ::Float64
     r::Float64
     
-    B::Float64
+    ECS::Float64
     τd::Float64
-    function Physics(ECS, CO₂_init, δT_init, Cd, κ, r)
-        FCO₂_2x = 3.48 # Forcing due to doubling CO2 (Held 2009, page 2421)
-        seconds_in_year = 60. * 60. * 24. * 365.25
+    function Physics(CO₂_init, δT_init, a, B, Cd, κ, r)
+        FCO₂_2x = a*log(2) # Forcing due to doubling CO2 (Geoffrey 2013)
+        sec_per_year = 60. * 60. * 24. * 365.25
         
-        B = (FCO₂_2x / ECS) * seconds_in_year; # Transient Warming Parameter [K (W m^-2 s yr^-1)^-1]
-        τd = (Cd/B) * (B+κ)/κ
-        return new(ECS, CO₂_init, δT_init, Cd, κ, r, B, τd)
+        ECS = (FCO₂_2x*sec_per_year)/B # [degC]
+        τd = (Cd/B) * (B+κ)/κ # [yr]
+        return new(CO₂_init, δT_init, a, B, Cd, κ, r, ECS, τd)
     end
 end
 
@@ -27,7 +28,7 @@ with bounded values ∈ [0,1].
 
 See also: [`ClimateModel`](@ref)
 """
-struct Controls
+mutable struct Controls
     mitigate::Array{Float64,1}
     remove::Array{Float64,1}
     geoeng::Array{Float64,1}
@@ -55,7 +56,8 @@ including a baseline emissions scenario.
 See also: [`ClimateModel`](@ref), [`baseline_emissions`](@ref).
 
 """
-struct Economics
+mutable struct Economics
+    GWP::Array{Float64,1}
     β::Float64
     utility_discount_rate::Float64
     
@@ -64,27 +66,28 @@ struct Economics
     geoeng_cost::Float64
     adapt_cost::Float64
     
-    mitigate_init::Float64
-    remove_init::Float64
-    geoeng_init::Float64
-    adapt_init::Float64
+    mitigate_init
+    remove_init
+    geoeng_init
+    adapt_init
     
     baseline_emissions::Array{Float64,1}
     extra_CO₂::Array{Float64,1}
 end
 
-function Economics(β, utility_discount_rate, mitigate_cost, remove_cost, geoeng_cost, adapt_cost, mitigate_init, remove_init, geoeng_init, adapt_init, baseline_emissions)
+function Economics(GWP, β, utility_discount_rate, mitigate_cost, remove_cost, geoeng_cost, adapt_cost, mitigate_init, remove_init, geoeng_init, adapt_init, baseline_emissions)
     return Economics(
+        GWP::Array{Float64,1},
         β::Float64,
         utility_discount_rate::Float64,
         mitigate_cost::Float64,
         remove_cost::Float64,
         geoeng_cost::Float64,
         adapt_cost::Float64,
-        mitigate_init::Float64,
-        remove_init::Float64,
-        geoeng_init::Float64,
-        adapt_init::Float64,
+        mitigate_init,
+        remove_init,
+        geoeng_init,
+        adapt_init,
         baseline_emissions::Array{Float64,1},
         zeros(size(baseline_emissions))
     )
@@ -139,7 +142,7 @@ climate model, starting from a given year (`present_year`), economic input param
 See also: [`Controls`](@ref), [`Economics`](@ref), [`CO₂`](@ref), [`δT`](@ref),
 [`optimize!`](@ref)
 """
-struct ClimateModel
+mutable struct ClimateModel
     name::String
     domain::Array{Float64,1}
     dt::Float64

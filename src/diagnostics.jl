@@ -18,10 +18,15 @@ function baseline_emissions(t::Array{Float64,1}, q0::Float64, t1::Float64, t2::F
     q[t .> t2] .= 0.
     return q
 end
-
 baseline_emissions(t::Array{Float64,1}) = baseline_emissions(t::Array{Float64,1}, 15., 2100., 2140.)
 
-effective_baseline_emissions(model::ClimateModel) = model.physics.r * baseline_emissions(model.domain)
+effective_baseline_emissions(model::ClimateModel) = (
+    model.physics.r * model.economics.baseline_emissions
+)
+
+controlled_emissions(model::ClimateModel) = (
+    (1. .- model.controls.mitigate) .* model.economics.baseline_emissions
+)
 
 effective_emissions(model::ClimateModel) = (
     model.physics.r * model.economics.baseline_emissions .* (1. .- model.controls.mitigate) .-
@@ -122,7 +127,7 @@ function discounting(model::ClimateModel)
 end
     
 damage_cost_baseline(model::ClimateModel) = (
-    model.economics.β .* δT_baseline(model).^2
+    model.economics.β .* model.economics.GWP .* δT_baseline(model).^2
 )
 
 discounted_damage_cost_baseline(model::ClimateModel) = (
@@ -131,7 +136,7 @@ discounted_damage_cost_baseline(model::ClimateModel) = (
 
 damage_cost(model::ClimateModel) = (
     (1. .- model.controls.adapt) .*
-    model.economics.β .* δT(model).^2
+    model.economics.β .* model.economics.GWP .* δT(model).^2
 )
 
 discounted_damage_cost(model::ClimateModel) = (
@@ -141,7 +146,8 @@ discounted_damage_cost(model::ClimateModel) = (
 control_cost(model::ClimateModel) = (
     model.economics.mitigate_cost .* f(model.controls.mitigate) .+
     model.economics.remove_cost .* f(model.controls.remove) .+
-    model.economics.geoeng_cost .* f(model.controls.geoeng) .+
+    model.economics.geoeng_cost .* model.economics.GWP.*
+    f(model.controls.geoeng) .+
     model.economics.adapt_cost .* f(model.controls.adapt)
 )
 
@@ -169,6 +175,13 @@ discounted_total_cost(model::ClimateModel) = (
     sum(net_cost(model) .* discounting(model)  .* model.dt)
 )
 
+mAtmos = 5.e18 # kg
+tCO2_to_ppm(tCO2) = tCO2 / (mAtmos/1.e3) * 1.e6 
+GtCO2_to_ppm(GtCO2) = GtCO2 * (1.e9) / (mAtmos/1.e3) * 1.e6
+
+ppm_to_tCO2(ppm) = ppm / 1.e6 * (mAtmos/1.e3)
+ppm_to_GtCO2(ppm) = ppm / 1.e6 / 1.e9 * (mAtmos/1.e3)
+
 function extra_ton(model::ClimateModel, year::Float64)
     
     econ = model.economics
@@ -176,7 +189,7 @@ function extra_ton(model::ClimateModel, year::Float64)
     year_idx = argmin(abs.(model.domain .- year))
     
     extra_CO₂ = zeros(size(model.domain))
-    extra_CO₂[year_idx:end] .= 1. /(1.25e10)
+    extra_CO₂[year_idx:end] .= tCO2_to_ppm(1.)
     
     new_economics = Economics(
         econ.β, econ.utility_discount_rate,
