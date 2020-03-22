@@ -46,12 +46,13 @@ function plot_concentrations(model::ClimateModel)
     return
 end
 
-function plot_temperatures(model::ClimateModel)
+function plot_temperatures(model::ClimateModel; hide_baseline=false)
     title("temperature change since 1850")
     plot(model.domain,2.0.*ones(size(model.domain)),"k--", alpha=0.5)
-    plot(model.domain,δT_baseline(model), color="C0", label=L"$T$ (no-policy baseline)")
-    plot(model.domain,δT_no_geoeng(model), color="C3", label=L"$T_{M,R}$ (controlled with $G=0$)")
-    plot(model.domain,δT(model), color="C1", label=L"$T_{M,R,G}$ (controlled)")
+    if ~hide_baseline; plot(model.domain,δT_baseline(model), color="C0", label=L"$T$ (no-policy baseline)"); end
+    plot(model.domain,δT_no_geoeng(model), color="C1", label=L"$T_{M,R}$ (controlled with $G=0$)")
+    plot(model.domain,δT(model), color="C3", label=L"$T_{M,R,G}$ (controlled)")
+    plot(model.domain,δT(model).*sqrt.(1. .- model.controls.adapt), color="C2", label=L"$T_{M,R,G,A}$ (adapted)")
     ylims = [0., maximum(δT_baseline(model)) * 1.05]
     fill_past(model, ylims)
     ylabel(L"temperature anomaly ($^{\circ}$C)")
@@ -76,19 +77,22 @@ function plot_controls(model::ClimateModel)
     return
 end
 
-function plot_benefits(model::ClimateModel)
+function plot_benefits(model::ClimateModel; discounted=true)
+    discount = discounting(model)
+    if ~discounted; discount=1.; end;
+    
     domain_idx = (model.domain .> model.present_year)
     benefits = (damage_cost_baseline(model) - damage_cost(model))
     fill_between(
         model.domain[domain_idx],
         0 .*ones(size(model.domain))[domain_idx],
-        ((benefits - control_cost(model)) .* discounting(model))[domain_idx],
+        ((benefits - control_cost(model)) .* discount)[domain_idx],
         facecolor="grey", alpha=0.2
     )
     plot(model.domain[domain_idx], 0 .*ones(size(model.domain))[domain_idx], "C0--", alpha=0.5, label="net benefits (no-policy baseline)")
-    plot(model.domain[domain_idx], ((benefits - control_cost(model)) .* discounting(model))[domain_idx], color="k", label="net benefits (benefits - costs)")
-    plot(model.domain[domain_idx], (benefits .* discounting(model))[domain_idx], color="C1", label="benefits (of avoided damages)")
-    plot(model.domain[domain_idx], (- control_cost(model) .* discounting(model))[domain_idx], color="C3", label=L"$-$ costs (of climate controls)")
+    plot(model.domain[domain_idx], ((benefits - control_cost(model)) .* discount)[domain_idx], color="k", label="net benefits (benefits - costs)")
+    plot(model.domain[domain_idx], (benefits .* discount)[domain_idx], color="C1", label="benefits (of avoided damages)")
+    plot(model.domain[domain_idx], (- control_cost(model) .* discount)[domain_idx], color="C3", label=L"$-$ costs (of climate controls)")
     ylabel(L"costs and benefits (10$^{12}$ \$ / year)")
     xlabel("year")
     xlim(model.domain[1],model.domain[end])
@@ -97,26 +101,31 @@ function plot_benefits(model::ClimateModel)
     return
 end
         
-function plot_damages(model)
+function plot_damages(model::ClimateModel; discounted=false, normalized=false)
+    discount = deepcopy(discounting(model))
+    if ~discounted; discount=1.; end;
+    E = deepcopy(model.economics.GWP)/100.
+    if ~normalized; E=1.; end;
+    
     domain_idx = (model.domain .> model.present_year)
     fill_between(
         model.domain[domain_idx],
         0 .*ones(size(model.domain))[domain_idx],
-        (control_cost(model) .* discounting(model))[domain_idx], facecolor="C3", alpha=0.2
+        (control_cost(model) .* discount ./ E)[domain_idx], facecolor="C3", alpha=0.2
     )
     plot(
         model.domain[domain_idx],
-        (model.economics.β*(2.0^2).*ones(size(model.domain)))[domain_idx],
+        (model.economics.β .* (model.economics.GWP ./ E) .* (2.0^2).*ones(size(model.domain)))[domain_idx],
         "k--", alpha=0.5, label=L"damage threshold at 2$^{\circ}$ C with $A=0$"
     )
-    plot(model.domain[domain_idx], (damage_cost_baseline(model) .* discounting(model))[domain_idx], color="C0", label="uncontrolled damages")
-    plot(model.domain[domain_idx], (net_cost(model) .* discounting(model))[domain_idx], color="k", label="net costs (controlled damages + controls)")
-    plot(model.domain[domain_idx], (damage_cost(model) .* discounting(model))[domain_idx], color="C1", label="controlled damages")
-    plot(model.domain[domain_idx], (control_cost(model) .* discounting(model))[domain_idx], color="C3", label="cost of controls")
+    plot(model.domain[domain_idx], (damage_cost_baseline(model) .* discount ./ E)[domain_idx], color="C0", label="uncontrolled damages")
+    plot(model.domain[domain_idx], (net_cost(model) .* discount ./ E)[domain_idx], color="k", label="net costs (controlled damages + controls)")
+    plot(model.domain[domain_idx], (damage_cost(model) .* discount ./ E)[domain_idx], color="C1", label="controlled damages")
+    plot(model.domain[domain_idx], (control_cost(model) .* discount ./ E)[domain_idx], color="C3", label="cost of controls")
     ylabel(L"discounted costs (10$^{12}$ \$ / year)")
     xlabel("year")
     xlim(model.domain[1],model.domain[end])
-    ylim([0., maximum((damage_cost_baseline(model) .* discounting(model))[domain_idx]) * 1.25])
+    ylim([0., maximum((damage_cost_baseline(model) .* discount ./ E)[domain_idx]) * 1.25])
     grid(true)
     title("costs of avoiding a damage threshold")
     return

@@ -1,7 +1,8 @@
 
-struct Physics
+mutable struct Physics
     CO₂_init::Float64
     δT_init::Float64
+    a::Float64
     B::Float64
     Cd::Float64
     κ::Float64
@@ -9,13 +10,13 @@ struct Physics
     
     ECS::Float64
     τd::Float64
-    function Physics(CO₂_init, δT_init, B, Cd, κ, r)
-        FCO₂_2x = 6.9/2. # Forcing due to doubling CO2 (Geoffrey 2013)
+    function Physics(CO₂_init, δT_init, a, B, Cd, κ, r)
+        FCO₂_2x = a*log(2) # Forcing due to doubling CO2 (Geoffrey 2013)
         sec_per_year = 60. * 60. * 24. * 365.25
         
         ECS = (FCO₂_2x*sec_per_year)/B # [degC]
         τd = (Cd/B) * (B+κ)/κ # [yr]
-        return new(CO₂_init, δT_init, B, Cd, κ, r, ECS, τd)
+        return new(CO₂_init, δT_init, a, B, Cd, κ, r, ECS, τd)
     end
 end
 
@@ -27,7 +28,7 @@ with bounded values ∈ [0,1].
 
 See also: [`ClimateModel`](@ref)
 """
-struct Controls
+mutable struct Controls
     mitigate::Array{Float64,1}
     remove::Array{Float64,1}
     geoeng::Array{Float64,1}
@@ -55,7 +56,7 @@ including a baseline emissions scenario.
 See also: [`ClimateModel`](@ref), [`baseline_emissions`](@ref).
 
 """
-struct Economics
+mutable struct Economics
     GWP::Array{Float64,1}
     β::Float64
     utility_discount_rate::Float64
@@ -141,7 +142,7 @@ climate model, starting from a given year (`present_year`), economic input param
 See also: [`Controls`](@ref), [`Economics`](@ref), [`CO₂`](@ref), [`δT`](@ref),
 [`optimize!`](@ref)
 """
-struct ClimateModel
+mutable struct ClimateModel
     name::String
     domain::Array{Float64,1}
     dt::Float64

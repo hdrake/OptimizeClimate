@@ -1,13 +1,13 @@
 function optimize_controls!(
         model::ClimateModel;
         obj_option = "temp", temp_goal = 2., budget=10., expenditure = 0.5,
-        max_deployment = Dict("mitigate"=>1., "remove"=>1., "geoeng"=>1., "adapt"=>1.),
-        maxslope = Dict("mitigate"=>1. /20., "remove"=>1. /40., "geoeng"=>1. /20., "adapt"=>0.),
+        max_deployment = Dict("mitigate"=>1., "remove"=>1., "geoeng"=>1., "adapt"=>1. /3.),
+        maxslope = Dict("mitigate"=>1. /20., "remove"=>1. /20., "geoeng"=>1. /40., "adapt"=>0.),
         temp_final = nothing,
         start_deployment = Dict(
             "mitigate"=>model.domain[1],
-            "remove"=>model.domain[1]+20,
-            "geoeng"=> model.domain[1]+40,
+            "remove"=>model.domain[1]+10,
+            "geoeng"=> model.domain[1]+30,
             "adapt"=>model.domain[1]
         ),
         cost_exponent = 2,
@@ -38,21 +38,54 @@ function optimize_controls!(
         end
     end
     
+    if typeof(cost_exponent) in [Int64, Float64]
+        cost_exponent = Dict(
+            "mitigate"=>cost_exponent, "remove"=>cost_exponent, "geoeng"=>cost_exponent, "adapt"=>cost_exponent
+        )
+    end
+    
     model_optimizer = Model(optimizer_with_attributes(Ipopt.Optimizer,
         "acceptable_tol" => 1.e-8, "max_iter" => Int64(1e6),
         "print_frequency_iter" => 50,  "print_timing_statistics" => bool_str,
         "print_level" => print_int
     ))
 
-    function f_JuMP(α)
+    function fM_JuMP(α)
         if α <= 0.
             return -1000.
         else
-            return α^cost_exponent
+            return α ^ cost_exponent["mitigate"]
         end
     end
-    register(model_optimizer, :f_JuMP, 1, f_JuMP, autodiff=true)
+    register(model_optimizer, :fM_JuMP, 1, fM_JuMP, autodiff=true)
 
+    function fA_JuMP(α)
+        if α <= 0.
+            return -1000.
+        else
+            return α ^ cost_exponent["adapt"]
+        end
+    end
+    register(model_optimizer, :fA_JuMP, 1, fA_JuMP, autodiff=true)
+    
+    function fR_JuMP(α)
+        if α <= 0.
+            return -1000.
+        else
+            return α ^ cost_exponent["remove"]
+        end
+    end
+    register(model_optimizer, :fR_JuMP, 1, fR_JuMP, autodiff=true)
+    
+    function fG_JuMP(α)
+        if α <= 0.
+            return -1000.
+        else
+            return α ^ cost_exponent["geoeng"]
+        end
+    end
+    register(model_optimizer, :fG_JuMP, 1, fG_JuMP, autodiff=true)
+    
     function log_JuMP(x)
         if x == 0
             return -1000.0
@@ -60,7 +93,6 @@ function optimize_controls!(
             return log(x)
         end
     end
-
     register(model_optimizer, :log_JuMP, 1, log_JuMP, autodiff=true)
 
     function discounting_JuMP(t)
@@ -73,7 +105,6 @@ function optimize_controls!(
             )
         end
     end
-
     register(model_optimizer, :discounting_JuMP, 1, discounting_JuMP, autodiff=true)
 
     q = model.economics.baseline_emissions
@@ -217,11 +248,11 @@ function optimize_controls!(
                         ) / (model.physics.B + model.physics.κ)
                     )
                     )^2 +
-                    model.economics.mitigate_cost * f_JuMP(M[i]) +
-                    model.economics.remove_cost * f_JuMP(R[i]) +
+                    model.economics.mitigate_cost * fM_JuMP(M[i]) +
+                    model.economics.remove_cost * fR_JuMP(R[i]) +
                     model.economics.geoeng_cost * model.economics.GWP[i] *
-                    f_JuMP(G[i]) +
-                    model.economics.adapt_cost * f_JuMP(A[i])
+                    fG_JuMP(G[i]) +
+                    model.economics.adapt_cost * fA_JuMP(A[i])
                 ) *
                 discounting_JuMP(model.domain[i]) *
                 model.dt
@@ -232,11 +263,11 @@ function optimize_controls!(
         @NLobjective(model_optimizer, Min,
             sum(
                 (
-                    model.economics.mitigate_cost * f_JuMP(M[i]) +
-                    model.economics.remove_cost * f_JuMP(R[i]) +
+                    model.economics.mitigate_cost * fM_JuMP(M[i]) +
+                    model.economics.remove_cost * fR_JuMP(R[i]) +
                     model.economics.geoeng_cost * model.economics.GWP[i] *
-                    f_JuMP(G[i]) +
-                    model.economics.adapt_cost * f_JuMP(A[i])
+                    fG_JuMP(G[i]) +
+                    model.economics.adapt_cost * fA_JuMP(A[i])
                 ) *
                 discounting_JuMP(model.domain[i]) *
                 model.dt
@@ -317,11 +348,11 @@ function optimize_controls!(
         @NLconstraint(model_optimizer,
             sum(
                 (
-                    model.economics.mitigate_cost * f_JuMP(M[i]) +
-                    model.economics.remove_cost * f_JuMP(R[i]) +
+                    model.economics.mitigate_cost * fM_JuMP(M[i]) +
+                    model.economics.remove_cost * fR_JuMP(R[i]) +
                     model.economics.geoeng_cost * model.economics.GWP[i] *
-                    f_JuMP(G[i]) +
-                    model.economics.adapt_cost * f_JuMP(A[i])
+                    fG_JuMP(G[i]) +
+                    model.economics.adapt_cost * fA_JuMP(A[i])
                 ) *
                 discounting_JuMP(model.domain[i]) *
                 model.dt
@@ -354,11 +385,11 @@ function optimize_controls!(
         for i in 1:N
             @NLconstraint(model_optimizer,
                 (
-                    model.economics.mitigate_cost * f_JuMP(M[i]) +
-                    model.economics.remove_cost * f_JuMP(R[i]) +
+                    model.economics.mitigate_cost * fM_JuMP(M[i]) +
+                    model.economics.remove_cost * fR_JuMP(R[i]) +
                     model.economics.geoeng_cost * model.economics.GWP[i] *
-                    f_JuMP(G[i]) +
-                    model.economics.adapt_cost * f_JuMP(A[i])
+                    fG_JuMP(G[i]) +
+                    model.economics.adapt_cost * fA_JuMP(A[i])
                 ) <= expenditure
             )
         end

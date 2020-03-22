@@ -1,33 +1,56 @@
 # Model domain
-present_year = 2020.
-dt = 5. # years
-t = Array(present_year:dt:2200);
-sec_per_year = (365. * 24. * 60. * 60.)
+present_year = 2020. # [yr]
+final_year = 2200. # [yr]
+dt = 5. # [yr]
+t = Array(present_year:dt:final_year); # [yr]
+sec_per_year = (365. * 24. * 60. * 60.) # [s/yr]
 
 ## Physics
-
 # Two-layer EBM (Gregory 2000) parameters from Geoffroy 2013
+a = (6.9/2)/log(2); # F4xCO2/2 / log(2) [W m^-2]
 B = 1.13 * sec_per_year; # Feedback parameter [J yr^-1 m^-2 K^-1]
 Cd = 106 * sec_per_year; # Deep ocean heat capacity [J m^-2 K^-1]
 κ = 0.73 * sec_per_year; # Heat exchange coefficient [J yr^-1 m^2 K^-1]
-δT_init = 1.1 # Berkeley Earth Surface Temperature (Rohde 2013)
+δT_init = 1.1 # [degC] Berkeley Earth Surface Temperature (Rohde 2013)
 
 # Carbon model
-CO₂_init = 460.
-r = 0.5 # fraction of emissions remaining after biosphere and ocean uptake (Solomon 2009)
+CO₂_init = 460. # [ppm]
+r = 0.4 # [1] fraction of emissions remaining after biosphere and ocean uptake (Solomon 2009)
 
-# Economics
-GWP0 = 100. # global world product (trillion $ / year)
-GWP(t) = GWP0 * exp.((t .- t[1]) / 50.)
+## Economics
+# Exogenous GWP
+GWP0 = 100. # global world product at t0 [10^12$ yr^-1]
+GWP(t) = GWP0 * 1.02.^(t .- t[1]) # global world product [10^12$ yr^-1], roughly equal to exp.((t .- t[1]) / 50.)
 
-β = 0.02/(3.0)^2 # damages (%GWP / celsius^2)
-utility_discount_rate = 0.0
+β = 0.02/(3.0)^2 # damages [%GWP / celsius^2]
+utility_discount_rate = 0.01
+
+# Costs of negative emissions technologies [US$/tCO2]
+costs = Dict(
+    "BECCS" => 150.,
+    "DACCS" => 200.,
+    "Forests" => 27.5,
+    "Weathering" => 125.,
+    "Biochar" => 70.,
+    "Soils" => 50.
+)
+potentials = Dict(
+    "BECCS" => 5.,
+    "DACCS" => 5.,
+    "Forests" => 3.6,
+    "Weathering" => 4.,
+    "Biochar" => 2.,
+    "Soils" => 5.
+)
+
+q0 = 15. # [ppm (CO2e) yr^-1]
+mean_cost = sum(values(potentials) .* values(costs)) / sum(values(potentials)) # [$ tCO2^-1]
 
 # Control technology cost scales, as fraction of GWP (cost scale is for full deployment, α=1.)
-mitigate_cost = 0.01*GWP0; # [10^12$ yr^-1] 
-remove_cost = 0.05*GWP0; # [10^12$ yr^-1] # Estimate cost from Fuss 2018 (see synthesis Figure 14)
-geoeng_cost = 2 * β * (6.0^2); # [%GWP]
-adapt_cost = 0.03*GWP0; # [10^12$ yr^-1]
+mitigate_cost = 0.02*GWP0; # [10^12$ yr^-1] # From IPCC SR15 
+remove_cost = mean_cost * ppm_to_tCO2(q0) * 1.e-12; # [10^12$ yr^-1] # Estimate cost from Fuss 2018 (see synthesis Figure 14)
+adapt_cost = 0.01*GWP0; # [10^12$ yr^-1] # From 
+geoeng_cost = β * ((8.5*sec_per_year)/(B+κ))^2; # [% of global world product] # ???
 
 """
     Economics()
@@ -66,7 +89,7 @@ Economics0(t) = Economics(
 Economics() = Economics(t)
 Economics0() = Economics0(t)
 
-Physics() = Physics(CO₂_init, δT_init, B, Cd, κ, r)
+Physics() = Physics(CO₂_init, δT_init, a, B, Cd, κ, r)
 
 ClimateModel(name::String) = ClimateModel(
     name,

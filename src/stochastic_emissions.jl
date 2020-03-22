@@ -1,3 +1,32 @@
+function deep_copy(economics::Economics)
+    return Economics(
+        deepcopy(economics.GWP),
+        deepcopy(economics.β),
+        deepcopy(economics.utility_discount_rate),
+        deepcopy(economics.mitigate_cost),
+        deepcopy(economics.remove_cost),
+        deepcopy(economics.geoeng_cost),
+        deepcopy(economics.adapt_cost),
+        deepcopy(economics.mitigate_init),
+        deepcopy(economics.remove_init),
+        deepcopy(economics.geoeng_init),
+        deepcopy(economics.adapt_init),
+        deepcopy(economics.baseline_emissions),
+    )
+end
+
+function deep_copy(physics::Physics)
+    return Physics(
+        deepcopy(physics.CO₂_init),
+        deepcopy(physics.δT_init),
+        deepcopy(physics.a),
+        deepcopy(physics.B),
+        deepcopy(physics.Cd),
+        deepcopy(physics.κ),
+        deepcopy(physics.r)
+    )
+end
+
 function deep_copy(controls::Controls)
     return Controls(
         deepcopy(controls.mitigate),
@@ -7,45 +36,39 @@ function deep_copy(controls::Controls)
     )
 end
 
-function step_forward(model::ClimateModel, Δt::Float64)
-    present_year = deepcopy(model.present_year) + Δt
-    name = string(Int64(round(present_year)));
-    
-    controls = deep_copy(model.controls)
-    
-    model = ClimateModel(
-        name, model.domain, model.dt, present_year, model.economics, model.physics, controls,
-    );
-    return model
+function deep_copy(model::ClimateModel)
+    return ClimateModel(
+        deepcopy(model.name),
+        deepcopy(model.domain),
+        deepcopy(model.dt),
+        deepcopy(model.present_year),
+        deepcopy(model.economics),
+        deepcopy(model.physics),
+        deepcopy(model.controls),
+    )
 end
 
-function add_emissions_bump(model::ClimateModel, Δt::Float64, Δq::Float64)
+function step_forward!(model::ClimateModel, Δt::Float64)
+    model.present_year = model.present_year + Δt
+    model.name = string(Int64(round(model.present_year)))
+end
 
-    present_idx = deepcopy(argmin(abs.(model.domain .- (model.present_year .+ Δt))))
+function add_emissions_bump!(model::ClimateModel, Δt::Float64, Δq::Float64; present_year = model.present_year)
     
-    future = (model.domain .>= model.present_year)
-    near_future = future .& (model.domain .<= model.present_year + Δt)
-    near_future1 = near_future .& (model.domain .< model.present_year + Δt/2)
-    near_future2 = near_future .& (model.domain .>= model.present_year + Δt/2)
+    present_idx = argmin(abs.(model.domain .- (present_year .+ Δt)))
     
-    new_emissions = deepcopy(model.economics.baseline_emissions)
+    future = (model.domain .>= present_year)
+    near_future = future .& (model.domain .<= present_year + Δt)
+    near_future1 = near_future .& (model.domain .< present_year + Δt/2)
+    near_future2 = near_future .& (model.domain .>= present_year + Δt/2)
+    
+    new_emissions = model.economics.baseline_emissions
     new_emissions[near_future1] .+= (
-        Δq * (model.domain .- model.present_year) / (Δt/2.)
+        Δq * (model.domain .- present_year) / (Δt/2.)
     )[near_future1]
     new_emissions[near_future2] .+= (
-        Δq * (1. .- (model.domain .- (model.present_year .+ Δt/2.)) / (Δt/2.))
+        Δq * (1. .- (model.domain .- (present_year .+ Δt/2.)) / (Δt/2.))
     )[near_future2]
     
-    econ = model.economics
-    economics = Economics(
-        econ.GWP, econ.β, econ.utility_discount_rate,
-        econ.mitigate_cost, econ.remove_cost, econ.geoeng_cost, econ.adapt_cost,
-        econ.mitigate_init, econ.remove_init, econ.geoeng_init, econ.adapt_init,
-        new_emissions
-    )
-    
-    model = ClimateModel(
-        model.name, model.domain, model.dt, model.present_year, economics, model.physics, model.controls,
-    );
-    return model
+    model.economics.baseline_emissions = new_emissions
 end
