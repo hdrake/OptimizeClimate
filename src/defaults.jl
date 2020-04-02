@@ -13,6 +13,13 @@ Cd = 106 * sec_per_year; # Deep ocean heat capacity [J m^-2 K^-1]
 κ = 0.73 * sec_per_year; # Heat exchange coefficient [J yr^-1 m^2 K^-1]
 δT_init = 1.1 # [degC] Berkeley Earth Surface Temperature (Rohde 2013)
 
+# Physical diagnostics
+FCO₂_2x = a*log(2) # Forcing due to doubling CO2 (Geoffrey 2013)
+sec_per_year = 60. * 60. * 24. * 365.25
+
+ECS = (FCO₂_2x*sec_per_year)/B # [degC]
+τd = (Cd/B) * (B+κ)/κ # [yr]
+
 # Carbon model
 CO₂_init = 460. # [ppm]
 r = 0.4 # [1] fraction of emissions remaining after biosphere and ocean uptake (Solomon 2009)
@@ -49,7 +56,7 @@ mean_cost = sum(values(potentials) .* values(costs)) / sum(values(potentials)) #
 # Control technology cost scales, as fraction of GWP (cost scale is for full deployment, α=1.)
 mitigate_cost = 0.02*GWP0; # [10^12$ yr^-1] # From IPCC SR15 
 remove_cost = mean_cost * ppm_to_tCO2(q0) * 1.e-12; # [10^12$ yr^-1] # Estimate cost from Fuss 2018 (see synthesis Figure 14)
-adapt_cost = 0.01*GWP0; # [10^12$ yr^-1] # From 
+adapt_cost = 0.03*GWP0; # [10^12$ yr^-1] # From 
 geoeng_cost = β * ((8.5*sec_per_year)/(B+κ))^2; # [% of global world product] # ???
 
 """
@@ -75,7 +82,7 @@ See also: [`ClimateModel`](@ref), [`baseline_emissions`](@ref)
 Economics(t) = Economics(
     GWP(t), β, utility_discount_rate,
     mitigate_cost, remove_cost, geoeng_cost, adapt_cost,
-    1. /6., 0., 0., nothing, # Initial condition on control deployments at t[1]
+    0.05, 0., 0., nothing, # Initial condition on control deployments at t[1]
     baseline_emissions(t)
 )
 

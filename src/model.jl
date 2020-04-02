@@ -1,4 +1,3 @@
-
 mutable struct Physics
     CO₂_init::Float64
     δT_init::Float64

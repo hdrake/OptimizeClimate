@@ -13,12 +13,12 @@ function baseline_emissions(t::Array{Float64,1}, q0::Float64, t1::Float64, t2::F
     q = zeros(size(t))
     increase_idx = (t .<= t1)
     decrease_idx = ((t .> t1) .& (t .<= t2))
-    q[increase_idx] .= q0 * (1 .+ (t[increase_idx] .- t0)/Δt0)
-    q[decrease_idx] .= 2. * q0 * (t2 .- t[decrease_idx])/Δt1
+    q[increase_idx] .= q0 * (1. .+ 2. .*(t[increase_idx] .- t0)/Δt0)
+    q[decrease_idx] .= 3. * q0 * (t2 .- t[decrease_idx])/Δt1
     q[t .> t2] .= 0.
     return q
 end
-baseline_emissions(t::Array{Float64,1}) = baseline_emissions(t::Array{Float64,1}, 15., 2100., 2140.)
+baseline_emissions(t::Array{Float64,1}) = baseline_emissions(t::Array{Float64,1}, 10., 2100., 2150.)
 
 effective_baseline_emissions(model::ClimateModel) = (
     model.physics.r * model.economics.baseline_emissions
