@@ -7,7 +7,7 @@ sec_per_year = (365. * 24. * 60. * 60.) # [s/yr]
 
 ## Physics
 # Two-layer EBM (Gregory 2000) parameters from Geoffroy 2013
-a = (6.9/2)/log(2); # F4xCO2/2 / log(2) [W m^-2]
+a = (6.9/2.)/log(2.); # F4xCO2/2 / log(2) [W m^-2]
 B = 1.13 * sec_per_year; # Feedback parameter [J yr^-1 m^-2 K^-1]
 Cd = 106 * sec_per_year; # Deep ocean heat capacity [J m^-2 K^-1]
 κ = 0.73 * sec_per_year; # Heat exchange coefficient [J yr^-1 m^2 K^-1]

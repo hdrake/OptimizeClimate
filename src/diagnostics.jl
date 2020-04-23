@@ -1,3 +1,4 @@
+a = (6.9/2.)/log(2.);
 
 f(α::Array; p=2.) = α.^p # shape of individual cost functions
 
@@ -58,66 +59,99 @@ CO₂(model::ClimateModel) = (
 );
 
 FCO₂_baseline(model::ClimateModel) = (
-    5.35 .* log.( (CO₂_baseline(model) .+ model.physics.r * model.economics.extra_CO₂)./ CO₂_baseline(model)[1])
+    a .* log.( (CO₂_baseline(model) .+ model.physics.r * model.economics.extra_CO₂)./ model.physics.CO₂_init)
     * (60. * 60. * 24. * 365.25) # (W m^-2 s yr^-1)
 )
 
 FCO₂(model::ClimateModel) = (
-    (5.35 .* log.( (CO₂(model) .+ model.physics.r * model.economics.extra_CO₂)./ CO₂(model)[1]) -
+    (a .* log.( (CO₂(model) .+ model.physics.r * model.economics.extra_CO₂)./ model.physics.CO₂_init) -
         8.5*model.controls.geoeng)
     * (60. * 60. * 24. * 365.25)
 )
 
 FCO₂_no_geoeng(model::ClimateModel) = (
-    5.35 .* log.( (CO₂(model) .+ model.physics.r * model.economics.extra_CO₂)./ CO₂(model)[1])
+    a .* log.( (CO₂(model) .+ model.physics.r * model.economics.extra_CO₂)./ model.physics.CO₂_init)
     * (60. * 60. * 24. * 365.25)
 )
 
 δT_baseline(model::ClimateModel) = (
     model.physics.δT_init .+
-    (FCO₂_baseline(model) .+ model.physics.κ * 
+    (FCO₂_baseline(model) .+ model.physics.κ / (model.physics.τd * model.physics.B) *  
         (
-            (model.physics.τd * model.physics.B)^(-1) .*
-            exp.( - model.domain / model.physics.τd ) .*
+            exp.( -(model.domain .- (model.domain[1] - model.dt)) / model.physics.τd ) .*
             cumsum(
-                exp.( model.domain / model.physics.τd ) .*
+                exp.( (model.domain .- (model.domain[1] - model.dt)) / model.physics.τd ) .*
                 FCO₂_baseline(model)
                 .* model.dt
             )
         )
-    ) .* (model.physics.B + model.physics.κ)^-1
+    ) ./ (model.physics.B + model.physics.κ)
 )
 
 δT_no_geoeng(model::ClimateModel) = (
     model.physics.δT_init .+
-    (FCO₂_no_geoeng(model) .+ model.physics.κ * 
+    (FCO₂_no_geoeng(model) .+ model.physics.κ / (model.physics.τd * model.physics.B) *  
         (
-            (model.physics.τd * model.physics.B)^(-1) .*
-            exp.( - (model.domain .- model.domain[1]) / model.physics.τd ) .*
+            exp.( - (model.domain .- (model.domain[1] - model.dt)) / model.physics.τd ) .*
             cumsum(
-                exp.( (model.domain .- model.domain[1]) / model.physics.τd ) .*
+                exp.( (model.domain .- (model.domain[1] - model.dt)) / model.physics.τd ) .*
                 FCO₂_no_geoeng(model)
                 .* model.dt
             )
         )
-    ) .* (model.physics.B + model.physics.κ)^-1
+    ) ./ (model.physics.B + model.physics.κ)
 )
 
 δT(model::ClimateModel) = ((
         model.physics.δT_init .+
-        (FCO₂(model) .+ model.physics.κ * 
+        (FCO₂(model) .+ model.physics.κ / (model.physics.τd * model.physics.B) * 
             (
-                (model.physics.τd * model.physics.B)^(-1) .*
-                exp.( - (model.domain .- model.domain[1]) / model.physics.τd ) .*
+                exp.( - (model.domain .- (model.domain[1] - model.dt)) / model.physics.τd ) .*
                 cumsum(
-                    exp.( (model.domain .- model.domain[1]) / model.physics.τd ) .*
+                    exp.( (model.domain .- (model.domain[1] - model.dt)) / model.physics.τd ) .*
                     FCO₂(model)
                     .* model.dt
                 )
             )
-        ) .* (model.physics.B + model.physics.κ)^-1
+        ) ./ (model.physics.B + model.physics.κ)
     )
 )
+
+δT_adapt(model::ClimateModel) = ((
+        model.physics.δT_init .+
+        (FCO₂(model) .+ model.physics.κ / (model.physics.τd * model.physics.B) * 
+            (
+                exp.( - (model.domain .- (model.domain[1] - model.dt)) / model.physics.τd ) .*
+                cumsum(
+                    exp.( (model.domain .- (model.domain[1] - model.dt)) / model.physics.τd ) .*
+                    FCO₂(model)
+                    .* model.dt
+                )
+            )
+        ) ./ (model.physics.B + model.physics.κ)
+    ) .* sqrt.(1. .- model.controls.adapt)
+)
+
+δT_fast(model::ClimateModel) = ((
+        FCO₂(model) ./ (model.physics.B + model.physics.κ)
+    )
+)
+
+δT_slow(model::ClimateModel) = (
+    (
+        model.physics.κ / (model.physics.τd * model.physics.B) * 
+            (
+                exp.( - (model.domain .- (model.domain[1] - model.dt)) / model.physics.τd ) .*
+                cumsum(
+                    exp.( (model.domain .- (model.domain[1] - model.dt)) / model.physics.τd ) .*
+                    FCO₂(model)
+                    .* model.dt
+                )
+            )
+        ) ./ (model.physics.B + model.physics.κ)
+)
+
+
 
 function discounting(model::ClimateModel)
     discount = (1. .+ model.economics.utility_discount_rate) .^ (-(t .- model.present_year))
@@ -153,6 +187,10 @@ control_cost(model::ClimateModel) = (
 
 discounted_control_cost(model::ClimateModel) = (
     control_cost(model) .* discounting(model)
+)
+
+discounted_total_control_cost(model::ClimateModel) = (
+    sum(discounted_control_cost(model) .* model.dt)
 )
 
 discounted_total_damage_cost(model::ClimateModel) = (
