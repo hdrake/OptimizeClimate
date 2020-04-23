@@ -72,7 +72,7 @@ it also seeks to raise consciousness }
 
 \section{An Idealized Model for Optimal Climate Control}
 
-The MARGO model consists of a physical energy balance model of Earth's climate, an idealized model of climate damages and controls:
+The \textbf{MARGO} model consists of a physical energy balance model of Earth's climate, an idealized socio-economic model of climate damages and controls:
 \begin{center}
 \begin{tabular}{l}
 \textbf{M}itigation of greenhouse gas emissions, \\
@@ -82,19 +82,21 @@ The MARGO model consists of a physical energy balance model of Earth's climate, 
 \end{tabular}
 \end{center}
 and a modular, fast, and customizable \textbf{O}ptimization model with several options of objective functions and constraints. 
-\henri[inline]{Other naming options are ARMS (Adaptation Removal Mitigation Solar-geoengineering), ....}
+\henri[inline]{I am open to other naming options, but do not like MARS or ARMS (Adaptation Removal Mitigation Solar-geoengineering), as it sounds fairly military to me... I like MARGO because it places the four technologies roughly in their order of socio-technological readiness and because it is both memorable and easy to pronounce.}
 
-Each of the climate controls acts, in its own distinct way, to reduce the damages caused by  changing climate but also carry their own deployment costs (including research and development costs, infrastructure costs, political costs, costs of side-effect damages, etc). The model is designed to include key features of climate physics, economics, and policy as concisely as possible and in ways qualitatively consistent with both fundamental theory and more comprehensive models. We aim to construct a model which yields fundamental insights into optimal management of climate change but is significantly more accessible, transparent, flexible, and computationally inexpensive than conventional models. The model is developed in open source using the Julia programming language \citep{bezanson_julia:_2017} at \href{github.com/hdrake/OptimizeClimate}{github.com/hdrake/OptimizeClimate} (Drake et al., 2020). The parameter values used throughout the paper are set to the defaults in Tables \ref{tab.parameters} and \ref{tab.controls}, except where explicitly stated otherwise, and are justified in Appendix \ref{app.parameters}. In Appendix \ref{app.replication}, we show that by tweaking just a handful of these default parameter values, the model replicates the qualitative results from studies ranging from analytical control theory analysis \citep{soldatenko_optimal_2018} to numerical optimizations of commonly used Integrated Assessment Models such as DICE \citep{belaia_optimal_2019}.
+Each of the climate controls acts, in its own distinct way, to reduce the damages caused by a changing climate but also carry their own deployment costs (including research and development costs, infrastructure costs, political costs, costs of unintended damages, etc). The model is designed to include key features of climate physics, economics, and policy as concisely as possible and in ways qualitatively consistent with both fundamental theory and more comprehensive models. We aim to construct a model which yields fundamental insights into the optimal management of climate change but is significantly more accessible, transparent, flexible, and computationally inexpensive than conventional models. The cost of the models' extreme simplicity is that its results should only be interpreted as qualitative insights, not quantitative predictions.
+
+The model is developed in open source using the Julia programming language \citep{bezanson_julia:_2017} at \url{github.com/hdrake/OptimizeClimate} (Drake et al., 2020). The parameter values used throughout the paper are set to the defaults in Tables \ref{tab.parameters} and \ref{tab.controls}, except where explicitly stated otherwise, and are justified in Section 1 of the Supplementary Information. In Section 2 of the Supplementary Information, we show that by tweaking just a handful of these default parameter values, the model replicates the qualitative results of studies ranging from analytical control theory analysis of solar-geoengineering deployments \citep{soldatenko_optimal_2018} to numerical optimizations of mitigation, carbon dioxide removal, and solar geo-engineering deployments in DICE, a commonly used Integrated Assessment Model \citep{belaia_optimal_2019}.
 
 \subsection{CO$_{2}$ concentrations: baseline emissions, emissions reductions, and negative emissions}
 
-In the absence of climate policy, we assume CO$_{2}$ concentrations in the model start at present values of $c_{0} \equiv c(t_{0})$ in $t_{0}=2020$ CE and increase according to a baseline emissions scenario $q(t)$. The baseline concentrations are given by the accumulation of emissions in the atmosphere,
+In the absence of climate policy, we assume CO$_{2}$ concentrations in the model start at present values of $c_{0} \equiv c(t_{0})$ in $t_{0}=2020$ and increase according to a baseline emissions scenario $q(t)$. The baseline concentrations are given by the accumulation of emissions in the atmosphere,
 \begin{equation}
 c(t) = c_{0} + \int_{t'=t_{0}}^{t} rq(t') \text{ d}t',
 \end{equation}
-where $r \approx 40\%$ is the fraction of emissions which remain in the atmosphere, net of uptake by the terrestrial biosphere and the ocean \citep{solomon_irreversible_2009}, and $rq(t)$ are the \textit{effective emissions} that contribute to planetary warming via the greenhouse effect. The model currently has no explicit carbon cycle but in the future will include an idealized dynamic ocean carbon cycle \citep{glotter_simple_2014}, which captures both the initial linear uptake of carbon by the ocean and non-linear feedbacks due to the ocean's limited chemical buffering capacity. While we here only explicitly model CO$_{2}$ effects, other greenhouse gases may be approximated by forcing the model with the CO$_{2}$ concentrations that result in the equivalent global-mean forcing from all greenhouse gases, referred to as carbon dioxide-equivalent concentrations CO$_{2e}$. The radiative effects of aerosols (and other minor anthropogenic effects) are similarly bundled into CO$_{2e}$ but could instead be prescribed as additional time-dependent global-mean forcing terms, with associated damages (e.g. the negative health effects of airborne particulate matter) which could in turn be reduced by abatement policies \citep{thompson_systems_2014}.
+where $r \approx 40\%$ is the fraction of emissions which remain in the atmosphere, net of uptake by the terrestrial biosphere and the ocean \citep{solomon_irreversible_2009}, and $rq(t)$ are the \textit{effective emissions} that contribute to planetary warming via the greenhouse effect. The model currently has no explicit carbon cycle but in the future will include an idealized dynamic ocean carbon cycle \citep[e.g.][]{glotter_simple_2014}, which captures both the initial linear uptake of carbon by the ocean and non-linear feedbacks due to the ocean's limited chemical buffering capacity. While we here only explicitly model CO$_{2}$ effects, other greenhouse gases may be approximated by forcing the model with the CO$_{2}$ concentrations that result in the equivalent global-mean forcing from all greenhouse gases, referred to as carbon dioxide-equivalent concentrations CO$_{2e}$. The radiative effects of aerosols (and other minor anthropogenic effects) are similarly bundled into CO$_{2e}$ but could instead be prescribed as additional time-dependent global-mean forcing terms, with associated damages (e.g. the negative health effects of airborne particulate matter) which could in turn be reduced by air pollution abatement policies \citep{thompson_systems_2014}.
 
-For simplicity, we calibrate our baseline effective emissions to the no-climate-policy Representative Concentration Pathway (RCP) 8.5, which results in $\SI{8.5}{W m^{-2}}$ of radiative forcing by 2100 relative to preindustrial levels, mostly due to greenhouse gas emissions from rampant fossil fuel consumption \citep{riahi_scenarios_2007}. We approximate the RCP8.5 emissions by the continuous and piecewise linear function:
+For simplicity, we calibrate our baseline effective emissions to the high-end no-climate-policy Representative Concentration Pathway (RCP) 8.5, which results in $\SI{8.5}{W m^{-2}}$ of radiative forcing by 2100 relative to preindustrial levels, mostly due to greenhouse gas emissions from rampant fossil fuel consumption \citep{riahi_scenarios_2007}. We approximate the RCP8.5 emissions by the continuous and piecewise linear function:
 \begin{equation}
     q(t) = 
     \begin{cases}
@@ -105,7 +107,7 @@ For simplicity, we calibrate our baseline effective emissions to the no-climate-
 \end{equation}
 in which CO$_{2e}$ emissions increase linearly from a present-day value $q_{0} = \SI{10}{ppm\, yr^{-1}}$ ($\SI{50}{GtCO_{2e}\, yr^{-1}}$) to a maximum of $3q_{0} = \SI{30}{ppm\, yr^{-1}}$ in $2100$ and then decrease linearly to zero by $2150$ (Figure \ref{fig.temp_and_carbon}a). These effective emissions $rq(t)$ result in CO$_{2e}$ concentrations of about $\SI{1400}{ppm}$ and a corresponding anthropogenic radiative forcing of $\SI{8.5}{W\, m^{-2}}$ by $2150$, relative to preindustrial levels (see below).
 
-CO$_{2}$ emissions reductions are parameterized by the fractional \textbf{M}itigation of annual emissions $M(t) \in [0,1]$ such that the net annual emissions become $q(1-M(t))$. In acknowledgement of existing mitigation policies that make our current trajectory diverge from RCP8.5, we assume weak present day mitigation of $M(t_{0}) = \SI{5}{\%}$ \citep{hausfather_emissions_2020}.
+CO$_{2}$ emissions reductions are parameterized by the fractional \textbf{M}itigation of annual emissions $M(t) \in [0,1]$ such that the net annual emissions become $q(1-M(t))$. In acknowledgement of existing mitigation policies that make our current trajectory diverge from RCP8.5 \citep{hausfather_emissions_2020}, we assume modest present day mitigation of $M(t_{0}) = \SI{5}{\%}$.
 
 CO$_{2}$ \textbf{R}emoval is parameterized by the fraction $R(t) \in [0,1]$ of the baseline emissions $q_{0}$ in $2020$ that are sequestered from the atmosphere in a given year. The CO$_{2}$ concentrations in a given year are thus given by (Figure \ref{fig.temp_and_carbon}b):
 \begin{equation}
@@ -124,7 +126,7 @@ relative to $t_{0} = 2020$ and where $a \approx \SI{4.97}{W m^{-2}}$ \citep{geof
 
 The controlled greenhouse radiative forcing $F_{M, R}$ is (optionally) partially offset by Solar-\textbf{G}eoengineering measures, which reduce the rate at which solar radiation is absorbed by the surface and consequently impose a negative radiative forcing
 \begin{equation}
-F_{G}(t) \equiv -G(t)F(t \rightarrow \infty)
+F_{G}(t) \equiv -G(t)F(t \rightarrow \infty),
 \end{equation}
 determined by the fraction $G(t) \in [0,1]$ of the ultimate greenhouse forcing  $F(t \rightarrow \infty) = \SI{8.5}{W\, m^{-2}}$ that is offset by controlling solar radiation. The controlled net radiative forcing is thus given by:
 \begin{equation}
@@ -132,9 +134,9 @@ determined by the fraction $G(t) \in [0,1]$ of the ultimate greenhouse forcing  
 \end{equation}
 
 \begin{figure}[htb!]
-\noindent\includegraphics[width=1.0\textwidth]{figures/default-temp_carbon_and_temperatures.png}
+\noindent\includegraphics[width=1.0\textwidth]{figures/default-temp_carbon_and_temperatures.pdf}
 \centering
-\caption{Baseline (blue) and optimally-controlled (orange) a) effective CO$_{2e}$ emissions, b) CO$_{2e}$ concentrations, and c) temperature anomaly relative to preindustrial from cost-effectiveness analysis (see Section \ref{sec.cost-effectivness}). Panel c) shows the optimal temperature change that would occur: in a baseline scenario (blue); with just emissions \textbf{M}itigation and carbon dioxide \textbf{R}emoval (orange); with \textbf{M}itigation, \textbf{R}emoval, and solar-\textbf{G}eoengineering (red); and as an ``adapted temperature" (eq. \ref{eq.adapted_temperature}) with \textbf{A}daptation measures also taken into account. The dashed grey line marks the threshold temperature of $\SI{2}{\celsius}$ to be avoided.}
+\caption{Baseline (blue) and optimally-controlled (orange) a) effective CO$_{2e}$ emissions, b) CO$_{2e}$ concentrations, and c) temperature anomaly relative to preindustrial from cost-effectiveness analysis (see Section \ref{sec.cost-effectivness}). Panel c) shows the optimal temperature change that would occur: in a baseline scenario (blue); with just emissions \textbf{M}itigation and carbon dioxide \textbf{R}emoval (orange); with \textbf{M}itigation, \textbf{R}emoval, and solar-\textbf{G}eoengineering (red); and as an ``adapted temperature" (eq. \ref{eq.adapted_temperature}) with \textbf{A}daptation measures also taken into account. The dashed grey line marks the threshold adapted temperature of $T^{\star} = \SI{2}{\celsius}$ to be avoided.}
 \label{fig.temp_and_carbon}
 \end{figure}
 
@@ -219,7 +221,7 @@ In Section \ref{sec.cost_benefit}, we describe a cost-benefit analysis approach 
 to forbid implausibly aggressive deployment scenarios, and an initial or readiness condition
 \begin{equation}
     \alpha(t < t_{\alpha}) = \alpha_{0},
-\end{equation} where typically $\alpha_{0} = 0$ and $t_{\alpha} \ge t_{0}$ is the earliest time at which the control is ``ready" to be deployed. In particular, in the default configuration we set $t_{R} = 2030$ CE and $t_{G} = 2050$ CE because these socio-technological systems do not yet exist at a climatically-significant scale \citep{minx_negative_2018, flegal_solar_2019}. Additionally, we interpret adaptation deployment costs as buying insurance against future damages at a fixed annual rate $\mathcal{C}_{A} f^{(A)}(A)$, with $\dot{A} = 0$, which can be increased or decreased upon re-evaluation at a later date (see Section \ref{sec.reactive}).
+\end{equation} where typically $\alpha_{0} = 0$ and $t_{\alpha} \ge t_{0}$ is the earliest time at which the control is ``ready" to be deployed. In particular, in the default configuration we set $t_{R} = 2030$ and $t_{G} = 2050$ because these socio-technological systems do not yet exist at a climatically-significant scale \citep{minx_negative_2018, flegal_solar_2019}. Additionally, we interpret adaptation deployment costs as buying insurance against future damages at a fixed annual rate $\mathcal{C}_{A} f^{(A)}(A)$, with $\dot{A} = 0$, which can be increased or decreased upon re-evaluation at a later date (see Section \ref{sec.reactive}).
 
 \paragraph{Discount rates.} A common economic assumption is that society discounts future costs and benefits relative to the present by a multiplicative discount factor $(1 + \rho)^{-(t-t_{0})}$, determined by the utility discount rate $\rho$ \citep[e.g. see reviews in][]{broome_discounting_1994, stern_economics_2007}. Ethical justifications for applying a non-zero discount rate to the multi-generational timescales of climate change are unconvincing and controversial even among economists \citep{ramsey_mathematical_1928, solow_economics_1974, stern_economics_2007}. Here we choose a discount rate of $\rho = 1\%$, on the low end of values used in literature, in the spirit of inter-generational equity\footnote{Following \cite{stern_economics_2007}'s discussion of the discount rate $\rho = \eta \frac{\dot{c}}{c} + \delta$, we argue against the use of a \textit{social discount rate} on ethical terms \citep{ramsey_mathematical_1928, solow_economics_1974}, setting $\eta \frac{\dot{c}}{c} \approx 0$, and argue that the \textit{pure time discount rate}, the time decay rate of the probability that society exists, is small $\delta < \SI{1}{\%}$, and set $\rho \approx \SI{1}{\%}$. We note that while such a small discount rate of introduces a sensitivity to the length of the time period considered, the conventional use of discount rates results in an even more absurd assertion that future generations are worthless.}. 
 %In Section \ref{sec.discount_rates}, we consider the sensitivity of our results to the choice of the discount rate $\rho$ and focus on the ratio $\rho / \gamma$ between the discount rate and the economic growth rate.
@@ -239,7 +241,7 @@ are the avoided climate damages. A straight-forward solution of the cost-benefit
 The results of optimizing for net benefits are shown in Figure \ref{fig.approach1}. Early and aggressive emissions mitigation– and to a lesser extent carbon dioxide removal (Fig \ref{fig.approach1}a)– carry net costs of up to 1 trillion USD/year relative to the baseline but deliver orders of magnitude more in benefits from 2060 to 2200 (Fig \ref{fig.approach1}b). Adaptation and solar-geoengineering are mostly unused, reflecting their relative high costs and the fact that, unlike carbon controls, they only temporarily offset damages and do not solve the underlying problem of warming due to long-lived greenhouse gases.
 
 \begin{figure}[htb!]
-\noindent\includegraphics[width=1.0\textwidth]{figures/default-benefits_controls_and_benefits.png}
+\noindent\includegraphics[width=1.0\textwidth]{figures/default-benefits_controls_and_benefits.pdf}
 \centering
 \caption{a) Optimal control deployments in a net benefit-maximizing framework and b) corresponding discounted costs and benefits relative to a no-climate-policy baseline scenario. The total positive area shaded in grey in b) is the maximal net present benefits (eq. \ref{eq.net_present_benefits}).}
 \label{fig.approach1}
@@ -256,7 +258,7 @@ In the cost-effectiveness framework, we aim to keep the adapted temperature $T_{
 The results of optimizing the cost-effectiveness of controls that keep adapted temperatures below $T^{\star} = \SI{2}{\celsius}$ are shown in Figures \ref{fig.temp_and_carbon} and \ref{fig.approach2}. Fractional emissions mitigation increases proportional to the increase in baseline emissions, reaching $M=\SI{90}{\%}$ decarbonization by 2100, while carbon dioxide is removed at a roughly constant rate of $R q_{0} \approx \SI{1.5}{ppm/year}$ starting in 2030. Since the optimally-controlled temperatures that result from cost-benefit analysis are already lower than $T^{\star}$ (not shown), the optimal controls from cost-effectiveness are here less ambitious than for the cost-benefit analysis in the 21st Century (Figure \ref{fig.approach2}a vs. Figure \ref{fig.approach1}a). As a consequence of relatively relaxed mitigation and carbon dioxide removal early on, small but non-negligible deployment of solar-geoengineering is used to shave off a few tenths of a degree of warming during its peak in the mid-22nd Century in order to meet the temperature goal (Figure \ref{fig.approach2}a and Figure \ref{fig.temp_and_carbon}c). Adaptation offsets only $A = \SI{5}{\%}$ of damages and plays a minor role because the other controls have already substantially reduced damages. Even after discounting, annual costs of control deployments peak in 2100, driven by nearly synchronous peaks in mitigation and carbon dioxide removal.
 
 \begin{figure}[htb!]
-\noindent\includegraphics[width=1.0\textwidth]{figures/default-temp_controls_and_damages.png}
+\noindent\includegraphics[width=1.0\textwidth]{figures/default-temp_controls_and_damages.pdf}
 \centering
 \caption{(a) Optimal control deployments in a net cost-effectiveness framework and (b) corresponding costs and damages. In panel (b), the blue line shows the discounted baseline uncontrolled damages; the dashed grey line shows the discounted damages associated with $2^{\circ}$ of warming which are to be avoided; the orange line shows the discounted damages in the optimally-controlled solution; and the red line shows the optimal discounted costs of controls such that the shaded area below is the minimal net present costs of controls (eq. \ref{eq.cost_effectiveness}).}
 \label{fig.approach2}
@@ -303,7 +305,7 @@ To quantify the benefits of considering a complete portfolio of climate controls
 
 \section{A policy process for responding to uncertain future outcomes}\label{sec.reactive}
 
-Integrated Assessment Model (IAM) approaches, whether deterministic or stochastic, assume perfect foreknowledge of model dynamics, parameters (or their distributions), and inputs. Future outcomes will differ from projections because the models are imperfect approximations of the socio-economic and physical climate systems they represent. For example, socio-economic models may assume erroneous future costs of climate controls and physical climate models may omit tipping elements, both of which would lead to biases in model projections with respect to actual outcomes. Furthermore, the assumption of perfect foreknowledge degrades the active role of policy-makers and climate researchers in shaping the evolving distribution of model parameters. For example, developing control technology R\&D programs could bring down the future costs of controls faster than anticipated and new developments in climate science may cause estimates of physical parameter values to change over time.
+Integrated Assessment Model (IAM) approaches, whether deterministic or stochastic, assume perfect foreknowledge of model dynamics, parameters (or their distributions), and inputs. Future outcomes will differ from projections because the models are imperfect approximations of the socio-economic and physical climate systems they represent. For example, socio-economic models may assume erroneous future costs of climate controls and physical climate models may omit tipping elements \citep{steffen_trajectories_2018}, both of which would lead to biases in model projections with respect to actual outcomes. Furthermore, the assumption of perfect foreknowledge degrades the active role of policy-makers and climate researchers in shaping the evolving distribution of model parameters. For example, developing control technology R\&D programs could bring down the future costs of controls faster than anticipated and new developments in climate science may cause estimates of physical parameter values to change over time.
 
 % Prescribing fixed parameter values amounts to assuming perfect knowledge of socio-technological and physical climate systems with deep uncertainties and harboring disruptive surprises \citep{alley_abrupt_2003, steffen_trajectories_2018}.
 
@@ -316,11 +318,6 @@ The responsive control strategy process we propose is:
     \item Model structure and parameter values are revised, owing to new information;
     \item Future trajectories of control deployments are re-optimized, now from the vantage point of $t_{1}=t_{0}+\Delta t$ and with revised model parameters;
     \item Return to step 2, replacing $t_{1} = t_{0} + \Delta t$ with $t_{n} = t_{n-1}+\Delta t$ for period $n$, and repeat the process as desired.
-    % \item future trajectories of control deployments are optimized from the vantage point of $t = t_{0}$,
-    % \item control deployments are integrated forward one policy-making period $\Delta t$,
-    % \item model parameters are revised, owing to new information or policy decisions
-    % \item future trajectories of control deployments are re-optimized, now from the vantage point of $t = t_{0} + \Delta t$ and with updated model parameters,
-    % \item and we return to step 2, repeating the process as desired.
 \end{enumerate}
 
 To illustrate the utility of the policy response process, we apply it to three hypothetical future scenarios, in which the most cost-effective control trajectories for keeping adapted temperatures below $T^{\star} = \SI{2}{\celsius}$ are sequentially re-optimized in response to changes in model inputs and parameters.
@@ -348,9 +345,9 @@ Suppose that by 2050, a dramatically improved suite of general circulation clima
 This section demonstrates it is possible to define a policy response process that permits a climate policy-maker to make successive adjustments to climate control strategies based on evolving outcomes and research developments. A disciplined response process thus simultaneously reaps the benefits of early mitigation and minimizes potential regret by periodically adjusting for revealed model deficiencies.
 
 \begin{figure}[htb!]
-\noindent\includegraphics[width=1.0\textwidth]{figures/policy_updates.png}
+\noindent\includegraphics[width=0.95\textwidth]{figures/policy_updates.pdf}
 \centering
-\caption{}
+\caption{Illustration of a proposed responsive policy progress. (a) Optimal climate control trajectories for avoiding $T^{\star} = \SI{2}{\celsius}$ of warming, as in Figure \ref{fig.approach2}a. (b) Baseline and optimally-controlled effective emissions, as well as the hypothetical variability in baseline emissions considered. (c-h) Difference in optimal control trajectories due to sequential re-optimization at 2050 and 2080 with revised model parameters: (c,d) where historical effective emissions $rq(t)$ are sequentially increased and then decreased (as shown in insets and in panel b), (e,f) where the costs of carbon and solar geo-engineering are sequentially increased, and (g,h) where the best guess of the Equilibrium Climate Sensitivity (ECS) is revised upwards in 2050 and again in 2080.}
 \label{fig.policy_updates}
 \end{figure}
 
@@ -396,9 +393,9 @@ In the face of habitability limits \citep[e.g.][]{sherwood_adaptability_2010} an
  \hline
  Parameter & Default Configuration \\ [0.5ex] 
  \hline\hline
- $t_{0}$ & 2020 CE \\
+ $t_{0}$ & 2020 \\
  \hline
- $t_{f}$ & 2200 CE \\
+ $t_{f}$ & 2200 \\
  \hline
  $\delta t$ & \SI{5}{yr} \\
  \hline
@@ -455,13 +452,13 @@ In the face of habitability limits \citep[e.g.][]{sherwood_adaptability_2010} an
  \hline 
  $\dot{G}$ & \SI{1/20}{yr^{-1}} \\
  \hline 
- $t_{M}$ & $2020$ CE \\
+ $t_{M}$ & $2020$ \\
  \hline
- $t_{A}$ & $2020$ CE \\
+ $t_{A}$ & $2020$ \\
  \hline
- $t_{R}$ & $2030$ CE \\
+ $t_{R}$ & $2030$ \\
  \hline
- $t_{G}$ & $2050$ CE \\
+ $t_{G}$ & $2050$ \\
  \hline
  $M_{0}$ & $1/6$ \\
  \hline
