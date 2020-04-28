@@ -50,13 +50,13 @@ potentials = Dict(
     "Soils" => 5.
 )
 
-q0 = 15. # [ppm (CO2e) yr^-1]
 mean_cost = sum(values(potentials) .* values(costs)) / sum(values(potentials)) # [$ tCO2^-1]
+CDR_potential = sum(values(potentials)) / ppm_to_GtCO2(q0)
 
 # Control technology cost scales, as fraction of GWP (cost scale is for full deployment, α=1.)
 mitigate_cost = 0.02*GWP0; # [10^12$ yr^-1] # From IPCC SR15 
 remove_cost = mean_cost * ppm_to_tCO2(q0) * 1.e-12; # [10^12$ yr^-1] # Estimate cost from Fuss 2018 (see synthesis Figure 14)
-adapt_cost = 0.03*GWP0; # [10^12$ yr^-1] # From 
+adapt_cost = 0.0162*GWP0; # [10^12$ yr^-1] # From Global Comission Report on Adaptation
 geoeng_cost = β * ((8.5*sec_per_year)/(B+κ))^2; # [% of global world product] # ???
 
 """
@@ -82,7 +82,7 @@ See also: [`ClimateModel`](@ref), [`baseline_emissions`](@ref)
 Economics(t) = Economics(
     GWP(t), β, utility_discount_rate,
     mitigate_cost, remove_cost, geoeng_cost, adapt_cost,
-    0.05, 0., 0., nothing, # Initial condition on control deployments at t[1]
+    0.1, 0., 0., nothing, # Initial condition on control deployments at t[1]
     baseline_emissions(t)
 )
 

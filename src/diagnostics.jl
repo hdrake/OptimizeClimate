@@ -14,12 +14,14 @@ function baseline_emissions(t::Array{Float64,1}, q0::Float64, t1::Float64, t2::F
     q = zeros(size(t))
     increase_idx = (t .<= t1)
     decrease_idx = ((t .> t1) .& (t .<= t2))
-    q[increase_idx] .= q0 * (1. .+ 2. .*(t[increase_idx] .- t0)/Δt0)
-    q[decrease_idx] .= 3. * q0 * (t2 .- t[decrease_idx])/Δt1
+    q[increase_idx] .= q0 * (1. .+ 3. .*(t[increase_idx] .- t0)/Δt0)
+    q[decrease_idx] .= 4. * q0 * (t2 .- t[decrease_idx])/Δt1
     q[t .> t2] .= 0.
     return q
 end
-baseline_emissions(t::Array{Float64,1}) = baseline_emissions(t::Array{Float64,1}, 10., 2100., 2150.)
+
+q0 = 7.5 # [ppm (CO2e) yr^-1]
+baseline_emissions(t::Array{Float64,1}) = baseline_emissions(t::Array{Float64,1}, q0, 2100., 2150.)
 
 effective_baseline_emissions(model::ClimateModel) = (
     model.physics.r * model.economics.baseline_emissions
@@ -213,12 +215,11 @@ discounted_total_cost(model::ClimateModel) = (
     sum(net_cost(model) .* discounting(model)  .* model.dt)
 )
 
-mAtmos = 5.e18 # kg
-tCO2_to_ppm(tCO2) = tCO2 / (mAtmos/1.e3) * 1.e6 
-GtCO2_to_ppm(GtCO2) = GtCO2 * (1.e9) / (mAtmos/1.e3) * 1.e6
+GtCO2_to_ppm(GtCO2) = GtCO2 / (2.13 * (44. /12.))
+tCO2_to_ppm(tCO2) = GtCO2_to_ppm(tCO2) * 1.e-9
 
-ppm_to_tCO2(ppm) = ppm / 1.e6 * (mAtmos/1.e3)
-ppm_to_GtCO2(ppm) = ppm / 1.e6 / 1.e9 * (mAtmos/1.e3)
+ppm_to_GtCO2(ppm) = ppm * (2.13 * (44. /12.))
+ppm_to_tCO2(ppm) = ppm_to_GtCO2(ppm) * 1.e9
 
 function extra_ton(model::ClimateModel, year::Float64)
     
