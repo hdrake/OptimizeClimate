@@ -22,7 +22,7 @@ ECS = (FCO₂_2x*sec_per_year)/B # [degC]
 
 # Carbon model
 CO₂_init = 460. # [ppm]
-r = 0.4 # [1] fraction of emissions remaining after biosphere and ocean uptake (Solomon 2009)
+r = 0.5 # [1] fraction of emissions remaining after biosphere and ocean uptake (Solomon 2009)
 
 ## Economics
 # Exogenous GWP

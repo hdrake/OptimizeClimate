@@ -2,7 +2,7 @@ function optimize_controls!(
         model::ClimateModel;
         obj_option = "temp", temp_goal = 2.0, budget=10., expenditure = 0.5,
         max_deployment = Dict("mitigate"=>1., "remove"=>1., "geoeng"=>1., "adapt"=>1. /3.),
-        maxslope = Dict("mitigate"=>1. /20., "remove"=>1. /20., "geoeng"=>1. /40., "adapt"=>0.),
+        maxslope = Dict("mitigate"=>1. /30., "remove"=>1. /30., "geoeng"=>1. /30., "adapt"=>0.),
         temp_final = nothing,
         start_deployment = Dict(
             "mitigate"=>model.domain[1],
@@ -11,8 +11,15 @@ function optimize_controls!(
             "adapt"=>model.domain[1]
         ),
         cost_exponent = 2.,
+        mitigate_cost_limit = nothing,
         print_status = false, print_statistics = false, print_raw_status = true,
     )
+    
+    if !isnothing(mitigate_cost_limit)
+        if mitigate_cost_limit < max_deployment["mitigate"]
+            max_deployment["mitigate"] = mitigate_cost_limit
+        end
+    end
     
     if print_status
         if print_statistics
@@ -26,14 +33,14 @@ function optimize_controls!(
         bool_str = "no"
     end
     
-    if temp_final == nothing
+    if isnothing(temp_final)
         temp_final = temp_goal
     elseif temp_final >= temp_goal
         temp_final = temp_goal
     end
     
     for (key, item) in start_deployment
-        if item == nothing
+        if isnothing(item)
             start_deployment[key] = model.present_year
         end
     end
@@ -53,16 +60,24 @@ function optimize_controls!(
 
     function fM_JuMP(α)
         if α <= 0.
-            return -1000.
+            return 100.
         else
-            return α ^ cost_exponent["mitigate"]
+            if isnothing(mitigate_cost_limit)
+                return α ^ cost_exponent["mitigate"]
+            else
+                if (α ^ cost_exponent["mitigate"] / (1. - (α/mitigate_cost_limit)^4) >= 100.) | (α >= mitigate_cost_limit)
+                    return 100.
+                else
+                    return α ^ cost_exponent["mitigate"] / (1. - exp(20. *(α - mitigate_cost_limit)))
+                end
+            end
         end
     end
     register(model_optimizer, :fM_JuMP, 1, fM_JuMP, autodiff=true)
 
     function fA_JuMP(α)
         if α <= 0.
-            return -1000.
+            return 1000.
         else
             return α ^ cost_exponent["adapt"]
         end
@@ -71,7 +86,7 @@ function optimize_controls!(
     
     function fR_JuMP(α)
         if α <= 0.
-            return -1000.
+            return 1000.
         else
             return α ^ cost_exponent["remove"]
         end
@@ -80,7 +95,7 @@ function optimize_controls!(
     
     function fG_JuMP(α)
         if α <= 0.
-            return -1000.
+            return 1000.
         else
             return α ^ cost_exponent["geoeng"]
         end
