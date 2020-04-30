@@ -75,10 +75,10 @@ Climate-controlled scenarios are considered relative to an exogenous no-policy b
 
 There are five steps in the causal chain between CO$_{2e}$ emissions and climate damages.
 \begin{enumerate}
-    \item CO$_{2e}$ is emitted at a rate $q(t)$, with only $r = 50\%$ remaining in the atmosphere net of uptake by the ocean and terrestrial biosphere (Figure \ref{fig:carbon_and_temp}a).
-    \item CO$_{2e}$ concentrations increase as long as the effective emissions $rq(t)$ are non-zero and are given by $c(t) = c(t_{0}) + \int_{t_{0}}^{t} rq(t)\text{ d}t$ (Figure \ref{fig:carbon_and_temp}b).
+    \item CO$_{2e}$ is emitted at a rate $q(t)$, with only $r = 50\%$ remaining in the atmosphere net of uptake by the ocean and terrestrial biosphere (Figure \ref{fig:carbon_and_temperature}a).
+    \item CO$_{2e}$ concentrations increase as long as the emissions $q(t)$ are non-zero and are given by $c(t) = c(t_{0}) + \int_{t_{0}}^{t} rq(t)\text{ d}t$ (Figure \ref{fig:carbon_and_temperature}b).
     \item Increasing CO$_{2e}$ concentrations strengthen the greenhouse effect, reducing outgoing longwave radiation and causing an increased radiative forcing of $F(t) = a \ln(c(t)/c_{t_{0}})$. 
-    \item Near-surface air temperatures increase by $T(t) = F(t)/B$ to balance the reduced cooling to space, where a fraction $B/(\kappa + B)$ of the warming occurs within a few years and the remaining fraction $\kappa/(B + \kappa)$ occurs over the course of several centuries due to ocean heat uptake. The feedback parameter $B$ includes the effects of all climate feedbacks, except those involving the carbon cycle and the long-term ice sheet response (Figure \ref{fig:carbon_and_temp}c), and the ocean heat uptake rate $\kappa$ parameterizes the combined effects of advection and diffusion of heat into the deep ocean.
+    \item Near-surface air temperatures increase by $T(t) = F(t)/B$ to balance the reduced cooling to space, where a fraction $B/(\kappa + B)$ of the warming occurs within a few years and the remaining fraction $\kappa/(B + \kappa)$ occurs over the course of several centuries due to ocean heat uptake. The feedback parameter $B$ includes the effects of all climate feedbacks, except those involving the carbon cycle and the long-term ice sheet response (Figure \ref{fig:carbon_and_temperature}c), and the ocean heat uptake rate $\kappa$ parameterizes the combined effects of advection and diffusion of heat into the deep ocean.
     \item Anthropogenic warming causes a myriad of climate impacts, which result in damages that increase non-linearly with temperature, $D = \beta T^{2}$.
 \end{enumerate} 
 
@@ -97,18 +97,23 @@ The four available climate controls enter as fractional controls at each link of
     \text{Damage}
 \end{equation}
 
-\begin{figure}%[tbhp]
+\begin{figure*}%[tbhp]
 \centering
-\includegraphics[width=.8\linewidth]{frog}
-\caption{Placeholder image of a frog with a long example legend to show justification setting.}
-\label{fig:frog}
-\end{figure}
+\includegraphics[width=17.8cm]{figures/default-temp_carbon_and_temperatures.pdf}
+\caption{Baseline (blue) and optimally-controlled (orange) a) effective CO$_{2e}$ emissions, b) CO$_{2e}$ concentrations, and c) temperature anomaly relative to preindustrial from cost-effectiveness analysis (see Section \ref{sec:cost-effectivness}). Panel c) shows the optimal temperature change that would occur: in a baseline scenario (blue); with just emissions \textbf{M}itigation and carbon dioxide \textbf{R}emoval (orange); with \textbf{M}itigation, \textbf{R}emoval, and solar-\textbf{G}eoengineering (red); and as an ``adapted temperature" (eq. \ref{eq.adapted_temperature}) with \textbf{A}daptation measures also taken into account. The dashed grey line marks the threshold adapted temperature of $T^{\star} = \SI{2}{\celsius}$ to be avoided.}
+\label{fig:carbon_and_temperature}
+\end{figure*}
 
-\textbf{M}itigation reduces effective emissions by a factor $M(t) \in [0,1]$ such that the controlled effective emissions are given by $rq(t)\,(1-M(t))$, where $M = 1$ corresponds to complete decarbonization of the economy.
+\textbf{M}itigation reduces emissions by a factor $M(t) \in [0,1]$ such that the controlled emissions that remain in the atmosphere are $rq(t)\,(1-M(t))$, where $M = 1$ corresponds to complete decarbonization of the economy.
 
 \textbf{R}emoval of CO$_{2e}$, $R(t) \in [0,1]$, in contrast to mitigation, is de-coupled from instantaneous emissions and is expressed as the fraction of 2020 baseline emissions that are removed from the atmosphere in a given year, $q_{0}R(t)$. A maximal value of $R=1$ corresponds to removing $\SI{59}{GtCO_{2e} / year}$, which is more than twice a median estimate of the global potential for negative emission technologies \cite{fuss_negative_2018}.
 
-Both mitigation and removal act to reduce CO$_{2e}$ concentrations,
+A useful diagnostic quantity is the effective emissions
+\begin{equation}
+    rq(t)(1-M(t)) - q_{0}R,
+    \label{eq:effective-emissions}
+\end{equation} which is the annual rate of $CO_{2e}$ accumulation in the atmosphere (Figure \ref{fig:carbon_and_temperature}a) and is controlled by both mitigation and carbon dioxide removal.
+The CO$_{2e}$ concentration is simply the integral of the effective emissions over time (Figure \ref{fig:carbon_and_temperature}b),
 \begin{equation}
     c_{M,R}(t) = c_{0} + \int_{t_{0}}^{t} rq(t')(1-M(t')) \text{ d}t' - q_{0} \int_{t_{0}}^{t} R(t')\text{ d}t'.
 \end{equation}
@@ -119,9 +124,9 @@ Both mitigation and removal act to reduce CO$_{2e}$ concentrations,
 \end{equation}
 where $F_{M,R} = a \ln(c_{M,R}(t) / c_{0})$ is the controlled CO$_{2e}$ forcing and $F(t \rightarrow \infty) = \SI{8.5}{W/m^{2}}$ is the maximum baseline CO$_{2e}$ forcing, which is attained starting in 2150. A value of $G = 1$ thus corresponds to a complete cancellation between the baseline equilibrium warming by CO$_{2e}$ and cooling by reflecting incoming solar radiation.
 
-The controlled near-surface air temperature evolves according to the total controlled forcing,
+The controlled near-surface air temperature (Figure \ref{fig:carbon_and_temperature}c) evolves according to the total controlled forcing,
 \begin{equation}
-    T(t) - T_{0} = \frac{F_{M,R,G}(t)}{B + \kappa} + \frac{\kappa}{B} \int_{t_{0}}^{t} \frac{e^{\frac{t'-t}{\tau_{D}}}}{\tau_{D}} \frac{F_{M,R,G}(t')}{B+\kappa} \, \text{d}t',
+    T_{M,R,G}(t) - T_{0} = \frac{F_{M,R,G}(t)}{B + \kappa} + \frac{\kappa}{B} \int_{t_{0}}^{t} \frac{e^{\frac{t'-t}{\tau_{D}}}}{\tau_{D}} \frac{F_{M,R,G}(t')}{B+\kappa} \, \text{d}t',
     \label{eq:temperature}
 \end{equation}
 where $T_{0} = \SI{1.1}{\celsius}$ is the present warming relative to preindustrial and $\tau_{D} = \SI{240}{years}$ is the slow timescale of ocean heat uptake. The first term on the right-hand side of [\ref{eq:temperature}] represents a fast transient response while the second term represents a slow recalcitrant response due to the thermal inertia of the deep ocean. Climate inertia decouples the temperature response from instantaneous forcing and implies that a certain amount of warming is locked in for the future, even if radiative forcing is stabilized (as in the case of bring emissions to zero in our model\footnote{In earth system models with a dynamic carbon cycle, the slow recalcitrant warming due to a reduction in ocean heat uptake happens to be roughly offset by the ocean carbon sink \cite{solomon_irreversible_2009,lickley_time_2019}, such that bringing emissions to zero roughly stabilizes temperatures.}).
@@ -154,13 +159,39 @@ In contrast to conventional Integrated Assessment Models, which follow classic e
 
 \section*{Optimal deployments of climate controls}
 
-If a trusted climate policy decision-maker specifies an objective function to maximize and, optionally, additional policy constraints, the MARGO model is readily optimized in terms of the time-dependent climate control variables $M(t), R(t), G(t), A(t)$. Here, we describe the optimally-controlled results of two policy approaches, cost-benefit analysis and cost-effectiveness analysis, and explore their sensitivity to the discount rate $\rho$ and the maximum penetration of mitigation $\mu$, respectively.
+If a trusted climate policy decision-maker specifies an objective function to maximize and, optionally, additional policy constraints, the MARGO model is readily optimized in terms of the time-dependent climate control variables $M(t), R(t), G(t), A(t)$. The numerical implementation of the optimization, as well as additional constraints on the permitted rates of deployments, are described in the Methods. Here, we describe the optimally-controlled results of two policy approaches, cost-benefit analysis and cost-effectiveness analysis, and explore their sensitivity to the discount rate $\rho$ and possible limits to the fractional penetration of mitigation $\mu$, respectively.
 
-\subsection*{Cost-benefit analysis}
+\subsection*{Cost-benefit analysis}\label{sec:cost-benefit}
 
-A natural and widely-used objective function is the 
+A natural and widely-used objective function is the cost-benefit framework, in which the cost $\mathcal{C}_{M, R, G, A}$ of deploying climate controls is balanced against the benefits $\mathcal{B}_{M, R, G, A}$ of the avoided climate damages. Formally, we aim to maximize the net present benefits:
+\begin{gather}
+    \max \left\{ \int_{t_{0}}^{t_{f}} 
+    \left(\mathcal{B}_{M, R, G, A} - \mathcal{C}_{M, R, G, A} \right) (1 + \rho)^{-(t-t_{0})} \, \text{d}t \right\},
+    \label{eq.net_present_benefits}
+\end{gather}
+where $\rho$ is a discount rate that determines the annual depreciation of future costs and benefits. There are different views about the appropriate non-zero discount rate to apply to multi-generational social utility \cite{ramsey_mathematical_1928, solow_economics_1974, stern_economics_2007}. Here, we choose a discount rate of $\rho = 1\%$, on the low end of values used in the literature, motivated by our preference towards inter-generational equity\footnote{Follow \cite{stern_economics_2007}'s discussion of the discount rate...}.
 
-\subsection*{Cost-effectiveness of avoiding damage thresholds}
+The results of maximizing net benefits are shown in Figure \ref{fig:cost-benefit}. Early and aggressive emissions mitigation– and to a lesser extent carbon dioxide removal (Fig \ref{fig:cost-benefit}a)– carry net costs of up to 1 trillion USD/year before 2050 relative to the no-policy baseline but deliver orders of magnitude more in benefits from 2050 to 2200 (Fig \ref{fig:cost-benefit}b). Deployments of adaptation and solar-geoengineering are relatively modest, reflecting their relative high costs and the fact that they are further down the causal chain of climate damages and do not directly affect the root cause of the damage: increasing CO$_{2e}$ concentrations due to positive effective emissions.
+
+The preference for controls earlier in the causal chain, notably mitigation, is largely a result of our subjective choice $\rho = 1\%$ for the discount rate. In particular, as the discount rate increases above the economic growth rate, $\rho > \gamma = 2\%$, the decay of the discount factor out-competes economic growth and leads to a different regime of control preferences: the short-term fix offered by solar geo-engineering becomes the dominant control since the high future costs of its unintended damages are effectively annulled by the aggressive discounting.
+
+\begin{SCfigure*}%[tbhp]
+\centering
+\includegraphics[width=11.4cm]{figures/default-benefits_controls_and_benefits.pdf}
+\caption{Results of cost-benefit analysis and sensitivity to the discount rate $\rho$. (a) Optimal control deployments and (b) corresponding discounted costs and benefits relative to the no climate-policy baseline scenario. The total positive area shaded in grey in (b) is the maximal net present benefits (eq. \ref{eq:net-present-benefits}). An inset zooms in on the 2020 to 2050 period of modest net costs. (c) Time-mean control deployments and (d) maximum allowed carbon-controlled temperature change $T_{M,R}$ and controlled temperature change $T_{M,R,G}$ as a function of the discount rate. The difference $\Delta T = \max{T_{M,R,G}} - \max{T_{M,R}}$ between the red and orange lines in (d) gives a sense of the amount of cooling caused by solar geo-engineering.}
+\label{fig:cost-benefit}
+\end{SCfigure*}
+
+\subsection*{Cost-effectiveness of avoiding damage thresholds}\label{sec:cost-effectivness}
+
+The conventional cost-benefit approach to understanding climate change is limited by the poorly constrained damage function, which has historically been under-estimated \cite{} and must be continually revised as we understand more about climate surprises lurking at high levels of forcing \citep{alley_abrupt_2003, sherwood_adaptability_2010, }. An alternative approach, which  become the focus of recent global climate negotiations,
+
+\begin{SCfigure*}%[tbhp]
+\centering
+\includegraphics[width=11.4cm]{figures/default-temp_controls_and_damages.pdf}
+\caption{Results of cost-benefit analysis and sensitivity to potential limits $\mu$ to mitigation. (a) Optimal control deployments and (b) corresponding costs and damages. In panel (b), the blue line shows the discounted baseline uncontrolled damages; the dashed grey line shows the discounted damages associated with $2^{\circ}$ of warming, which are to be avoided at all costs; the orange line shows the discounted damages in the optimally-controlled solution; and the red line shows the optimal discounted costs of controls such that the shaded area below is the minimal net present costs of controls (eq. \ref{eq:cost-effectiveness}). (c) The maximum deployment of each control as a function of $\mu$, the mitigation level at which costs asymptote to infinity, where the mitigation cost function has been modified to the asymptotic function $\mathcal{C}_{M} M^{2} \left( 1 - e^{20 (M - \mu)} \right)^{-1}$ shown in (d) and we enforce limits $0 \leq M \leq \mu$.}
+\label{fig:cost-benefit}
+\end{SCfigure*}
 
 \section*{A policy process for responding to uncertain future outcomes}
 
@@ -198,20 +229,6 @@ PNAS must be able to archive the data essential to a published article. Where su
 
 \subsection*{Language-Editing Services}
 Prior to submission, authors who believe their manuscripts would benefit from professional editing are encouraged to use a language-editing service (see list at www.pnas.org/page/authors/language-editing). PNAS does not take responsibility for or endorse these services, and their use has no bearing on acceptance of a manuscript for publication. 
-
-\begin{figure}%[tbhp]
-\centering
-\includegraphics[width=.8\linewidth]{frog}
-\caption{Placeholder image of a frog with a long example legend to show justification setting.}
-\label{fig:frog}
-\end{figure}
-
-
-\begin{SCfigure*}[\sidecaptionrelwidth][t]
-\centering
-\includegraphics[width=11.4cm,height=11.4cm]{frog}
-\caption{This legend would be placed at the side of the figure, rather than below it.}\label{fig:side}
-\end{SCfigure*}
 
 \subsection*{Digital Figures}
 
