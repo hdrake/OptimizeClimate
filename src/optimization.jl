@@ -65,7 +65,14 @@ function optimize_controls!(
             if isnothing(mitigate_cost_limit)
                 return α ^ cost_exponent["mitigate"]
             else
-                if (α ^ cost_exponent["mitigate"] / (1. - (α/mitigate_cost_limit)^4) >= 100.) | (α >= mitigate_cost_limit)
+                if (
+                        (
+                            (α ^ cost_exponent["mitigate"]/
+                                (1. - exp(20. *(α - mitigate_cost_limit)))
+                                ) >= 100.
+                        ) |
+                        (α >= mitigate_cost_limit)
+                    )
                     return 100.
                 else
                     return α ^ cost_exponent["mitigate"] / (1. - exp(20. *(α - mitigate_cost_limit)))
