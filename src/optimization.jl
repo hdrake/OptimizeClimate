@@ -11,7 +11,7 @@ function optimize_controls!(
             "adapt"=>model.domain[1]
         ),
         cost_exponent = 2.,
-        mitigate_cost_limit = nothing,
+        mitigate_cost_limit = nothing, mitigate_cost_factor = nothing,
         print_status = false, print_statistics = false, print_raw_status = true,
     )
     
@@ -68,14 +68,14 @@ function optimize_controls!(
                 if (
                         (
                             (α ^ cost_exponent["mitigate"]/
-                                (1. - exp(20. *(α - mitigate_cost_limit)))
+                                (1. - exp(mitigate_cost_factor *(α - mitigate_cost_limit)))
                                 ) >= 100.
                         ) |
                         (α >= mitigate_cost_limit)
                     )
                     return 100.
                 else
-                    return α ^ cost_exponent["mitigate"] / (1. - exp(20. *(α - mitigate_cost_limit)))
+                    return α ^ cost_exponent["mitigate"] / (1. - exp(mitigate_cost_factor * (α - mitigate_cost_limit)))
                 end
             end
         end
