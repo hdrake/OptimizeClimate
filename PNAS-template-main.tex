@@ -84,7 +84,7 @@ There are five steps in the causal chain between CO$_{2e}$ emissions and climate
 
 \subsection*{Effects of climate controls}
 
-The four available climate controls enter as fractional controls at each link of the climate change causal chain \cite[similar to][]{Moreno}:
+The four available climate controls enter as fractional controls at each link of the climate change causal chain \cite[similar to][]{moreno-cruz_economic_2018}:
 \begin{equation}
     \text{Emission}
     \xrightarrow{\text{\textbf{M}}}
@@ -138,7 +138,7 @@ where $T_{0} = \SI{1.1}{\celsius}$ is the present warming relative to preindustr
 \end{equation}
 where the damage parameter $\beta$ is tuned such that a warming of $\SI{3}{\celsius}$ results in damages of the $2\%$ of Global World Product (GWP). Although adaptation does not affect the planetary temperature directly, it is useful to consider an "adapted temperature" $T_{M,R,G,A}$ which yields controlled damages equivalent to the fully-controlled damages $\beta (T_{M,R,G,A})^{2} = \beta (T_{M,R,G})^{2} (1-A)$ and is defined
 \begin{equation}
-    T_{M,R,G,A} \equiv T_{M,R,G} \sqrt{(1-A)}.\label{eq.adapted_temperature}
+    T_{M,R,G,A} \equiv T_{M,R,G} \sqrt{(1-A)}.\label{eq:adapted-temperature}
 \end{equation}
 
 \subsection*{Costs and benefits of controlling the climate}
@@ -184,16 +184,40 @@ The preference for controls earlier in the causal chain, notably mitigation, is 
 
 \subsection*{Cost-effectiveness of avoiding damage thresholds}\label{sec:cost-effectivness}
 
-The conventional cost-benefit approach to understanding climate change is limited by the poorly constrained damage function, which has historically been under-estimated \cite{} and must be continually revised as we understand more about climate surprises lurking at high levels of forcing \citep{alley_abrupt_2003, sherwood_adaptability_2010, }. An alternative approach, which  become the focus of recent global climate negotiations,
+The conventional cost-benefit approach to understanding climate change is limited by the poorly constrained damage function, which has historically been under-estimated \cite{} and must be continually revised as we understand more about climate surprises lurking at high levels of forcing \citep{alley_abrupt_2003, sherwood_adaptability_2010, scher_carbonocean_2017}. An alternative approach, which presently guides global climate policy negotiations, is to prescribe a threshold of climate damages– or temperatures, as in the Paris Climate Agreement \cite{ParisAgreement2015} - which is not to be surpassed.
+
+In our implementation of the cost-effectiveness approach, we aim to find the lowest net present costs of control deployments
+\begin{equation}
+    \min\left\{\int_{t_{0}}^{t_{f}} \mathcal{C}_{M,R,G,A} (1 + \rho)^{-(t-t_{0})} \text{ d}t\right\}
+\end{equation}
+which keep controlled damages below the level corresponding to a chosen temperature threshold,
+$\beta (T_{M,R,G})^{2} (1 - A(t)) < \beta (T^{\star})^{2}$, which we rewrite
+\begin{equation}
+    T_{M,R,G,A} < T^{\star},
+\end{equation}
+where $T_{M,R,G,A}$ is the "adapted temperature" (eq. \ref{eq:adapted-temperature}) and the threshold $T^{\star} = \SI{2}{\celsius}$ is inspired by the Paris Climate Agreement.
+
+The results of optimizing the cost-effectiveness of controls that keep adapted temperatures below $T^{\star} = \SI{2}{\celsius}$ are shown in Figures \ref{fig:carbon_and_temperature} and \ref{fig:cost-effectiveness}. Fractional emissions mitigation increases proportional to the increase in baseline emissions, reaching $M=\SI{90}{\%}$ decarbonization by 2100, while carbon dioxide is removed at a roughly constant rate of $R q_{0} \approx 20\%\, q_{0} = \SI{1.5}{ppm/year}$ starting in 2030. Since the optimally-controlled temperatures that result from the above cost-benefit analysis are already lower than $T^{\star}$, the optimal controls from cost-effectiveness are less ambitious than for the cost-benefit analysis (Figures \ref{fig:cost-benefit}a, \ref{fig:cost-effectiveness}a). As a consequence of relatively relaxed mitigation and carbon dioxide removal early on, small but non-negligible deployment of solar-geoengineering is used to shave off a few tenths of a degree of warming during its peak in the mid-22nd Century in order to meet the temperature goal (Figure \ref{fig:cost-effectiveness}a and Figure \ref{fig:carbon_and_temperature}c). Adaptation offsets $A = \SI{15}{\%}$ of damages and plays a moderate role in reducing damages below the threshold. Even after discounting, annual costs of control deployments peak in 2100, driven by a peak in mitigation, which is most cost-efficient in 2100 where the baseline emissions are the highest (Figure \ref{fig:cost-effectiveness}b).
+
+To explore the sensitivity of these results to our assumed mitigation costs $\mathcal{C}_{M} M^{2}$, which allow for up to $90\%$ mitigation in 2100 at the relatively low cost of $\SI{1.6}{trillion\; USD/year}$ ($\SI{7}{USD/tCO_{2e}}$), we add the multiplicative factor for penetration $P(\mu) = \left(1 - e^{20(M-\mu)}\right)^{-1}$ to the mitigation cost function. The penetration factor $P(\mu)$ is equal to $1$ except in the vicinity of $M = \mu$, where it rapidly asymptotes to infinity (Figure \ref{fig:cost-effectiveness}d). The original cost function is recovered in the limit $\mu \gg 1$. As we lower the penetration limit $\mu$ of mitigation, the . Maximum solar geo-engineering is relatively constant for high $\mu$ but begins to increase as $\mu < 25\%$. FINISH THIS SECTION!!!
+
 
 \begin{SCfigure*}%[tbhp]
 \centering
 \includegraphics[width=11.4cm]{figures/default-temp_controls_and_damages.pdf}
 \caption{Results of cost-benefit analysis and sensitivity to potential limits $\mu$ to mitigation. (a) Optimal control deployments and (b) corresponding costs and damages. In panel (b), the blue line shows the discounted baseline uncontrolled damages; the dashed grey line shows the discounted damages associated with $2^{\circ}$ of warming, which are to be avoided at all costs; the orange line shows the discounted damages in the optimally-controlled solution; and the red line shows the optimal discounted costs of controls such that the shaded area below is the minimal net present costs of controls (eq. \ref{eq:cost-effectiveness}). (c) The maximum deployment of each control as a function of $\mu$, the mitigation level at which costs asymptote to infinity, where the mitigation cost function has been modified to the asymptotic function $\mathcal{C}_{M} M^{2} \left( 1 - e^{20 (M - \mu)} \right)^{-1}$ shown in (d) for three values of $\mu$.}
-\label{fig:cost-benefit}
+\label{fig:cost-effectiveness}
 \end{SCfigure*}
 
 \section*{A policy process for responding to uncertain future outcomes}
+
+
+\begin{SCfigure*}%[tbhp]
+\centering
+\includegraphics[width=11.4cm]{figures/policy_updates.pdf}
+\caption{Illustration of a proposed responsive policy progress. (a) Optimal climate control trajectories for avoiding $T^{\star} = \SI{2}{\celsius}$ of warming, as in Figure \ref{fig:cost-effectiveness}a. (b) Baseline and optimally-controlled effective emissions, as well as the hypothetical variability in baseline emissions considered in panels (c) and (d). (c-h) Difference in optimal control trajectories due to sequential re-optimization at 2050 and 2080 with revised model parameters: (c,d) where historical effective emissions $rq(t)$ are sequentially increased and then decreased (insets), (e,f) where the costs of carbon and solar geo-engineering are sequentially increased, and (g,h) where the best guess of the Equilibrium Climate Sensitivity (ECS) is revised upwards in 2050 and again in 2080.}
+\label{fig:cost-effectiveness}
+\end{SCfigure*}
 
 \subsection*{Example: uncertainty in baseline emissions}
 
@@ -319,6 +343,6 @@ All data used in the study can be found at \url{github.com/hdrake/OptimizeClimat
 \showacknow{} % Display the acknowledgments section
 
 % Bibliography
-\bibliography{references, refs_by_hand}
+\bibliography{references, refs_by_hand, refs_extra}
 
 \end{document}
