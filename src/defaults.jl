@@ -9,6 +9,7 @@ sec_per_year = (365. * 24. * 60. * 60.) # [s/yr]
 # Two-layer EBM (Gregory 2000) parameters from Geoffroy 2013
 a = (6.9/2.)/log(2.); # F4xCO2/2 / log(2) [W m^-2]
 B = 1.13 * sec_per_year; # Feedback parameter [J yr^-1 m^-2 K^-1]
+Cu = 7.3 * sec_per_year; # Upper ocean heat capacity [J m^-2 K^-1]
 Cd = 106 * sec_per_year; # Deep ocean heat capacity [J m^-2 K^-1]
 κ = 0.73 * sec_per_year; # Heat exchange coefficient [J yr^-1 m^2 K^-1]
 δT_init = 1.1 # [degC] Berkeley Earth Surface Temperature (Rohde 2013)
@@ -27,7 +28,8 @@ r = 0.5 # [1] fraction of emissions remaining after biosphere and ocean uptake (
 ## Economics
 # Exogenous GWP
 GWP0 = 100. # global world product at t0 [10^12$ yr^-1]
-GWP(t) = GWP0 * 1.02.^(t .- t[1]) # global world product [10^12$ yr^-1], roughly equal to exp.((t .- t[1]) / 50.)
+γ = 0.02 # economic growth rate
+GWP(t) = GWP0 * (1. + γ).^(t .- t[1]) # global world product [10^12$ yr^-1], roughly equal to exp.((t .- t[1]) / 50.)
 
 β = 0.02/(3.0)^2 # damages [%GWP / celsius^2]
 utility_discount_rate = 0.01
@@ -53,11 +55,19 @@ potentials = Dict(
 mean_cost = sum(values(potentials) .* values(costs)) / sum(values(potentials)) # [$ tCO2^-1]
 CDR_potential = sum(values(potentials)) / ppm_to_GtCO2(q0)
 
-# Control technology cost scales, as fraction of GWP (cost scale is for full deployment, α=1.)
-mitigate_cost = 0.02*GWP0; # [10^12$ yr^-1] # From IPCC SR15 
-remove_cost = mean_cost * ppm_to_tCO2(q0) * 1.e-12; # [10^12$ yr^-1] # Estimate cost from Fuss 2018 (see synthesis Figure 14)
-adapt_cost = 0.0162*GWP0; # [10^12$ yr^-1] # From Global Comission Report on Adaptation
-geoeng_cost = β * ((8.5*sec_per_year)/(B+κ))^2; # [% of global world product] # ???
+### Control technology cost scales, as fraction of GWP (cost scale is for full deployment, α=1.)
+
+# Estimate cost from Fuss 2018 (see synthesis Figure 14)
+remove_cost = mean_cost * ppm_to_tCO2(q0) * 1.e-12; # [10^12$ yr^-1]
+
+# From Global Comission Report on Adaptation
+adapt_cost = 0.036*GWP0; # [% of GWP] 
+
+# From AR5 on Mitigation
+mitigate_cost = 0.02; # [% GWP]
+
+# Reflecting costs of offsetting 8.5 W/m^2 of damages
+geoeng_cost = β * ((8.5*sec_per_year)/(B+κ))^2; # [% of global world product]
 
 """
     Economics()

@@ -2,7 +2,7 @@ function optimize_controls!(
         model::ClimateModel;
         obj_option = "temp", temp_goal = 2.0, budget=10., expenditure = 0.5,
         max_deployment = Dict("mitigate"=>1., "remove"=>1., "geoeng"=>1., "adapt"=>1. /3.),
-        maxslope = Dict("mitigate"=>1. /30., "remove"=>1. /30., "geoeng"=>1. /30., "adapt"=>0.),
+        maxslope = Dict("mitigate"=>1. /40., "remove"=>1. /40., "geoeng"=>1. /20., "adapt"=>0.),
         temp_final = nothing,
         start_deployment = Dict(
             "mitigate"=>model.domain[1],
@@ -11,15 +11,9 @@ function optimize_controls!(
             "adapt"=>model.domain[1]
         ),
         cost_exponent = 2.,
-        mitigate_cost_limit = nothing, mitigate_cost_factor = nothing,
+        mitigation_penetration = nothing,
         print_status = false, print_statistics = false, print_raw_status = true,
     )
-    
-    if !isnothing(mitigate_cost_limit)
-        if mitigate_cost_limit < max_deployment["mitigate"]
-            max_deployment["mitigate"] = mitigate_cost_limit
-        end
-    end
     
     if print_status
         if print_statistics
@@ -62,21 +56,10 @@ function optimize_controls!(
         if α <= 0.
             return 100.
         else
-            if isnothing(mitigate_cost_limit)
+            if isnothing(mitigation_penetration)
                 return α ^ cost_exponent["mitigate"]
             else
-                if (
-                        (
-                            (α ^ cost_exponent["mitigate"]/
-                                (1. - exp(mitigate_cost_factor *(α - mitigate_cost_limit)))
-                                ) >= 100.
-                        ) |
-                        (α >= mitigate_cost_limit)
-                    )
-                    return 100.
-                else
-                    return α ^ cost_exponent["mitigate"] / (1. - exp(mitigate_cost_factor * (α - mitigate_cost_limit)))
-                end
+                return α ^ cost_exponent["mitigate"] / (1. - exp( - (1. - α) / (1. - mitigation_penetration)))
             end
         end
     end
@@ -280,11 +263,12 @@ function optimize_controls!(
                         ) / (model.physics.B + model.physics.κ)
                     )
                     )^2 +
-                    model.economics.mitigate_cost * fM_JuMP(M[i]) +
+                    model.economics.mitigate_cost * model.economics.GWP[i] *
+                    fM_JuMP(M[i]) +
+                    model.economics.adapt_cost * fA_JuMP(A[i]) +
                     model.economics.remove_cost * fR_JuMP(R[i]) +
                     model.economics.geoeng_cost * model.economics.GWP[i] *
-                    fG_JuMP(G[i]) +
-                    model.economics.adapt_cost * fA_JuMP(A[i])
+                    fG_JuMP(G[i])
                 ) *
                 discounting_JuMP(model.domain[i]) *
                 model.dt
@@ -295,11 +279,12 @@ function optimize_controls!(
         @NLobjective(model_optimizer, Min,
             sum(
                 (
-                    model.economics.mitigate_cost * fM_JuMP(M[i]) +
+                    model.economics.mitigate_cost * model.economics.GWP[i] *
+                    fM_JuMP(M[i]) +
+                    model.economics.adapt_cost * fA_JuMP(A[i]) +
                     model.economics.remove_cost * fR_JuMP(R[i]) +
                     model.economics.geoeng_cost * model.economics.GWP[i] *
-                    fG_JuMP(G[i]) +
-                    model.economics.adapt_cost * fA_JuMP(A[i])
+                    fG_JuMP(G[i])
                 ) *
                 discounting_JuMP(model.domain[i]) *
                 model.dt
@@ -381,11 +366,12 @@ function optimize_controls!(
         @NLconstraint(model_optimizer,
             sum(
                 (
-                    model.economics.mitigate_cost * fM_JuMP(M[i]) +
+                    model.economics.mitigate_cost * model.economics.GWP[i] *
+                    fM_JuMP(M[i]) +
+                    model.economics.adapt_cost * fA_JuMP(A[i]) +
                     model.economics.remove_cost * fR_JuMP(R[i]) +
                     model.economics.geoeng_cost * model.economics.GWP[i] *
-                    fG_JuMP(G[i]) +
-                    model.economics.adapt_cost * fA_JuMP(A[i])
+                    fG_JuMP(G[i])
                 ) *
                 discounting_JuMP(model.domain[i]) *
                 model.dt
@@ -419,12 +405,13 @@ function optimize_controls!(
         for i in 1:N
             @NLconstraint(model_optimizer,
                 (
-                    model.economics.mitigate_cost * fM_JuMP(M[i]) +
+                    model.economics.mitigate_cost * model.economics.GWP[i] *
+                    fM_JuMP(M[i]) +
+                    model.economics.adapt_cost * fA_JuMP(A[i]) +
                     model.economics.remove_cost * fR_JuMP(R[i]) +
                     model.economics.geoeng_cost * model.economics.GWP[i] *
-                    fG_JuMP(G[i]) +
-                    model.economics.adapt_cost * fA_JuMP(A[i])
-                ) <= expenditure
+                    fG_JuMP(G[i])
+                ) <= expenditure * model.economics.GWP[i]
             )
         end
     end

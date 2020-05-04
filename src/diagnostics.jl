@@ -180,11 +180,12 @@ discounted_damage_cost(model::ClimateModel) = (
 )
 
 control_cost(model::ClimateModel) = (
-    model.economics.mitigate_cost .* f(model.controls.mitigate) .+
-    model.economics.remove_cost .* f(model.controls.remove) .+
-    model.economics.geoeng_cost .* model.economics.GWP.*
+    model.economics.mitigate_cost .* model.economics.GWP .*
+    f(model.controls.mitigate) .+
+    model.economics.geoeng_cost .* model.economics.GWP .*
     f(model.controls.geoeng) .+
-    model.economics.adapt_cost .* f(model.controls.adapt)
+    model.economics.adapt_cost .* f(model.controls.adapt) .+
+    model.economics.remove_cost .* f(model.controls.remove)
 )
 
 discounted_control_cost(model::ClimateModel) = (
