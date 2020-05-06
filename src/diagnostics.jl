@@ -60,18 +60,18 @@ CO₂(model::ClimateModel) = (
     )
 );
 
-FCO₂_baseline(model::ClimateModel) = (
+FCO₂_baseline(model::ClimateModel; a=a) = (
     a .* log.( (CO₂_baseline(model) .+ model.physics.r * model.economics.extra_CO₂)./ model.physics.CO₂_init)
     * (60. * 60. * 24. * 365.25) # (W m^-2 s yr^-1)
 )
 
-FCO₂(model::ClimateModel) = (
+FCO₂(model::ClimateModel; a=a) = (
     (a .* log.( (CO₂(model) .+ model.physics.r * model.economics.extra_CO₂)./ model.physics.CO₂_init) -
         8.5*model.controls.geoeng)
     * (60. * 60. * 24. * 365.25)
 )
 
-FCO₂_no_geoeng(model::ClimateModel) = (
+FCO₂_no_geoeng(model::ClimateModel; a=a) = (
     a .* log.( (CO₂(model) .+ model.physics.r * model.economics.extra_CO₂)./ model.physics.CO₂_init)
     * (60. * 60. * 24. * 365.25)
 )

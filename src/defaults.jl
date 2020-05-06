@@ -58,10 +58,10 @@ CDR_potential = sum(values(potentials)) / ppm_to_GtCO2(q0)
 ### Control technology cost scales, as fraction of GWP (cost scale is for full deployment, α=1.)
 
 # Estimate cost from Fuss 2018 (see synthesis Figure 14)
-remove_cost = mean_cost * ppm_to_tCO2(q0) * 1.e-12; # [10^12$ yr^-1]
+remove_cost = (1. /2.)^(-2) * mean_cost * ppm_to_tCO2(q0/2.) * 1.e-12; # [10^12$ yr^-1]
 
 # From Global Comission Report on Adaptation
-adapt_cost = 0.036*GWP0; # [% of GWP] 
+adapt_cost = (1. /5.)^(-2) * 0.018/10. * GWP0; # [10^12$ yr^-1] 
 
 # From AR5 on Mitigation
 mitigate_cost = 0.02; # [% GWP]
